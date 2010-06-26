@@ -170,7 +170,7 @@ let content_type_text = "text/plain";;
 let content_type_html = "text/html";;
 let content_type_xml = "text/xml";;
 
-type post_encoded = Unknown_encoding | URL_encoded | Multipart_form_data;;
+type post_encoded = [`unknown | `url_encoded | `multipart_form_data];;
 
 let post (): bool = Lazy.force post;;
 
@@ -178,11 +178,11 @@ let post_encoded () = (
 	let content_type_value = getenv env_content_type in
 	let content_type_value = String.lowercase content_type_value in
 	if prefixed content_type_url_encoded content_type_value then (
-		URL_encoded
+		`url_encoded
 	) else if prefixed content_type_multipart_form_data content_type_value then (
-		Multipart_form_data
+		`multipart_form_data
 	) else (
-		Unknown_encoding
+		`unknown
 	)
 );;
 
@@ -299,9 +299,9 @@ let read_input (): string StringMap.t = (
 		set_binary_mode_in stdin true;
 		really_input stdin data 0 length;
 		begin match post_encoded () with
-		| URL_encoded -> decode_query_string data
-		| Multipart_form_data -> decode_multipart_form_data data
-		| Unknown_encoding -> StringMap.empty
+		| `url_encoded -> decode_query_string data
+		| `multipart_form_data -> decode_multipart_form_data data
+		| `unknown -> StringMap.empty
 		end
 	) else (
 		StringMap.empty

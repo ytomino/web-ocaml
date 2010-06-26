@@ -6,7 +6,7 @@ val content_type_url_encoded: string
 val content_type_text: string
 val content_type_html: string
 val content_type_xml: string
-type post_encoded = Unknown_encoding | URL_encoded | Multipart_form_data
+type post_encoded = [`unknown | `url_encoded | `multipart_form_data]
 val post: unit -> bool
 val post_encoded: unit -> post_encoded
 val post_length: unit -> int
