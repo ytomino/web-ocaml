@@ -327,7 +327,7 @@ let encode_uri (print_string: string -> unit) (s: string): unit = (
 	done
 );;
 
-let encode_html (xhtml: bool) (print_string: string -> unit) (s: string): unit = (
+let encode_html ~(xhtml: bool) (print_string: string -> unit) (s: string): unit = (
 	let buf = String.make 1 ' ' in
 	for i = 0 to String.length s - 1 do
 		begin match s.[i] with

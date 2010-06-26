@@ -15,7 +15,7 @@ val decode_query_string: string -> string StringMap.t
 val decode_multipart_form_data: string -> string StringMap.t
 val read_input: unit -> string StringMap.t
 val encode_uri: (string -> unit) -> string -> unit
-val encode_html: bool -> (string -> unit) -> string -> unit
+val encode_html: xhtml:bool -> (string -> unit) -> string -> unit
 val encode_entity: (string -> unit) -> string -> unit
 val header_see_other: (string -> unit) -> string -> unit
 val header_service_unavailable: (string -> unit) -> unit
