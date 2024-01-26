@@ -295,9 +295,8 @@ let decode_multipart_form_data (source: string): string StringMap.t = (
 let read_input (): string StringMap.t = (
 	if post () then (
 		let length = post_length () in
-		let data = String.create length in
 		set_binary_mode_in stdin true;
-		really_input stdin data 0 length;
+		let data = really_input_string stdin length in
 		begin match post_encoded () with
 		| `url_encoded -> decode_query_string data
 		| `multipart_form_data -> decode_multipart_form_data data
@@ -309,26 +308,26 @@ let read_input (): string StringMap.t = (
 );;
 
 let encode_uri (print_string: string -> unit) (s: string): unit = (
-	let buf1 = String.make 1 ' ' in
-	let buf3 = String.make 3 '%' in
+	let buf1 = Bytes.make 1 ' ' in
+	let buf3 = Bytes.make 3 '%' in
 	for i = 0 to String.length s - 1 do
 		begin match s.[i] with
 		| ' ' ->
 			print_string "+"
 		| ('0'..'9' as c) | ('A'..'Z' as c) | ('a'..'z' as c) | (':' as c) | ('/' as c) | ('.' as c) ->
-			buf1.[0] <- c;
-			print_string buf1
+			Bytes.set buf1 0 c;
+			print_string (Bytes.unsafe_to_string buf1)
 		| _ as c ->
 			let n = int_of_char c in
-			buf3.[1] <- hex_of_int (n / 16);
-			buf3.[2] <- hex_of_int (n mod 16);
-			print_string buf3
+			Bytes.set buf3 1 (hex_of_int (n / 16));
+			Bytes.set buf3 2 (hex_of_int (n mod 16));
+			print_string (Bytes.unsafe_to_string buf3)
 		end
 	done
 );;
 
 let encode_html ~(xhtml: bool) (print_string: string -> unit) (s: string): unit = (
-	let buf = String.make 1 ' ' in
+	let buf1 = Bytes.make 1 ' ' in
 	for i = 0 to String.length s - 1 do
 		begin match s.[i] with
 		| '&' -> print_string "&amp;"
@@ -338,14 +337,14 @@ let encode_html ~(xhtml: bool) (print_string: string -> unit) (s: string): unit 
 		| '\n' -> print_string (if xhtml then "<br />" else "<br>")
 		| '\r' -> ()
 		| _ as c ->
-			buf.[0] <- c;
-			print_string buf
+			Bytes.set buf1 0 c;
+			print_string (Bytes.unsafe_to_string buf1)
 		end
 	done
 );;
 
 let encode_entity (print_string: string -> unit) (s: string): unit = (
-	let buf = String.make 1 ' ' in
+	let buf1 = Bytes.make 1 ' ' in
 	for i = 0 to String.length s - 1 do
 		begin match s.[i] with
 		| '&' -> print_string "&amp;"
@@ -357,8 +356,8 @@ let encode_entity (print_string: string -> unit) (s: string): unit = (
 		| '\n' -> print_string "&#10;"
 		| '\r' -> ()
 		| _ as c ->
-			buf.[0] <- c;
-			print_string buf
+			Bytes.set buf1 0 c;
+			print_string (Bytes.unsafe_to_string buf1)
 		end
 	done
 );;
