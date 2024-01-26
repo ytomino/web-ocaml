@@ -151,7 +151,9 @@ end;;
 open Private;;
 
 let bool_of_checkbox (value: string): bool = (
-	String.length value = 2 && Char.lowercase value.[0] = 'o' && Char.lowercase value.[0] = 'n'
+	String.length value = 2
+	&& Char.lowercase value.[0] = 'o'
+	&& Char.lowercase value.[1] = 'n'
 );;
 
 let request_uri (): string = (
