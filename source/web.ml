@@ -94,7 +94,7 @@ module Private = struct
 
 	let post = lazy (
 		let request_method_value = getenv env_request_method in
-		String.lowercase request_method_value = "post"
+		String.lowercase_ascii request_method_value = "post"
 	);;
 	
 	let decode_uri (source: string): string = (
@@ -152,8 +152,8 @@ open Private;;
 
 let bool_of_checkbox (value: string): bool = (
 	String.length value = 2
-	&& Char.lowercase value.[0] = 'o'
-	&& Char.lowercase value.[1] = 'n'
+	&& Char.lowercase_ascii value.[0] = 'o'
+	&& Char.lowercase_ascii value.[1] = 'n'
 );;
 
 let request_uri (): string = (
@@ -178,7 +178,7 @@ let post (): bool = Lazy.force post;;
 
 let post_encoded () = (
 	let content_type_value = getenv env_content_type in
-	let content_type_value = String.lowercase content_type_value in
+	let content_type_value = String.lowercase_ascii content_type_value in
 	if prefixed content_type_url_encoded content_type_value then (
 		`url_encoded
 	) else if prefixed content_type_multipart_form_data content_type_value then (
@@ -232,7 +232,9 @@ let decode_multipart_form_data (source: string): string StringMap.t = (
 	) in
 	let match_and_succ (sub: string) (i: int ref): bool = (
 		let sub_length = String.length sub in
-		if !i + sub_length <= source_length && String.lowercase (String.sub source !i sub_length) = sub then (
+		if !i + sub_length <= source_length
+			&& String.lowercase_ascii (String.sub source !i sub_length) = sub
+		then (
 			i := !i + sub_length;
 			true
 		) else (
