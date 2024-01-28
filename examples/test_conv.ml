@@ -1,3 +1,10 @@
+(* URI *)
+
+assert (Web.encode_uri_query "" = "");;
+assert (Web.encode_uri_query "?" = "%3f");;
+assert (Web.encode_uri_query "??" = "%3f%3f");;
+assert (Web.encode_uri_query "0 1" = "0+1");;
+
 (* Content-type *)
 
 assert (Web.decode_content_type "" = `unknown);;

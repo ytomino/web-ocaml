@@ -138,23 +138,28 @@ let content_type_text = "text/plain";;
 let content_type_html = "text/html";;
 let content_type_xml = "text/xml";;
 
-let encode_uri (print_string: string -> unit) (s: string) = (
-	let buf1 = Bytes.make 1 ' ' in
-	let buf3 = Bytes.make 3 '%' in
-	for i = 0 to String.length s - 1 do
-		begin match s.[i] with
+let encode_uri_query (s: string) = (
+	let rec loop s s_pos d d_pos = (
+		if s_pos >= String.length s then (
+			if d_pos < Bytes.length d then Bytes.sub_string d 0 d_pos
+			else Bytes.unsafe_to_string d
+		) else
+		begin match s.[s_pos] with
 		| ' ' ->
-			print_string "+"
+			Bytes.set d d_pos '+';
+			loop s (s_pos + 1) d (d_pos + 1)
 		| ('0'..'9' as c) | ('A'..'Z' as c) | ('a'..'z' as c) | (':' as c) | ('/' as c) | ('.' as c) ->
-			Bytes.set buf1 0 c;
-			print_string (Bytes.unsafe_to_string buf1)
+			Bytes.set d d_pos c;
+			loop s (s_pos + 1) d (d_pos + 1)
 		| _ as c ->
+			Bytes.set d d_pos '%';
 			let n = int_of_char c in
-			Bytes.set buf3 1 (hex_of_int (n / 16));
-			Bytes.set buf3 2 (hex_of_int (n mod 16));
-			print_string (Bytes.unsafe_to_string buf3)
+			Bytes.set d (d_pos + 1) (hex_of_int (n / 16));
+			Bytes.set d (d_pos + 2) (hex_of_int (n mod 16));
+			loop s (s_pos + 1) d (d_pos + 3)
 		end
-	done
+	) in
+	loop s 0 (Bytes.create (String.length s * 3)) 0
 );;
 
 let decode_query_string: string -> string StringMap.t = decode_query_string_or_cookie '&';;
@@ -305,7 +310,7 @@ let header_cookie (print_string: string -> unit) ?(expires: float option) (cooki
 		print_string "set-cookie: ";
 		print_string key;
 		print_string "=";
-		encode_uri print_string value;
+		print_string (encode_uri_query value);
 		print_string ";";
 		print_string (Lazy.force expires_image);
 		print_string "\n"
