@@ -138,6 +138,29 @@ let content_type_text = "text/plain";;
 let content_type_html = "text/html";;
 let content_type_xml = "text/xml";;
 
+let encode_uri (print_string: string -> unit) (s: string) = (
+	let buf1 = Bytes.make 1 ' ' in
+	let buf3 = Bytes.make 3 '%' in
+	for i = 0 to String.length s - 1 do
+		begin match s.[i] with
+		| ' ' ->
+			print_string "+"
+		| ('0'..'9' as c) | ('A'..'Z' as c) | ('a'..'z' as c) | (':' as c) | ('/' as c) | ('.' as c) ->
+			Bytes.set buf1 0 c;
+			print_string (Bytes.unsafe_to_string buf1)
+		| _ as c ->
+			let n = int_of_char c in
+			Bytes.set buf3 1 (hex_of_int (n / 16));
+			Bytes.set buf3 2 (hex_of_int (n mod 16));
+			print_string (Bytes.unsafe_to_string buf3)
+		end
+	done
+);;
+
+let decode_query_string: string -> string StringMap.t = decode_query_string_or_cookie '&';;
+
+let decode_cookie: string -> string StringMap.t = decode_query_string_or_cookie ';';;
+
 type post_encoded = [`unknown | `url_encoded | `multipart_form_data];;
 
 let decode_content_type (s: string) = (
@@ -150,10 +173,6 @@ let decode_content_type (s: string) = (
 		`unknown
 	)
 );;
-
-let decode_cookie: string -> string StringMap.t = decode_query_string_or_cookie ';';;
-
-let decode_query_string: string -> string StringMap.t = decode_query_string_or_cookie '&';;
 
 let decode_multipart_form_data (source: string) = (
 	let source_length = String.length source in
@@ -252,25 +271,6 @@ let decode_multipart_form_data (source: string) = (
 		done
 	);
 	!result
-);;
-
-let encode_uri (print_string: string -> unit) (s: string) = (
-	let buf1 = Bytes.make 1 ' ' in
-	let buf3 = Bytes.make 3 '%' in
-	for i = 0 to String.length s - 1 do
-		begin match s.[i] with
-		| ' ' ->
-			print_string "+"
-		| ('0'..'9' as c) | ('A'..'Z' as c) | ('a'..'z' as c) | (':' as c) | ('/' as c) | ('.' as c) ->
-			Bytes.set buf1 0 c;
-			print_string (Bytes.unsafe_to_string buf1)
-		| _ as c ->
-			let n = int_of_char c in
-			Bytes.set buf3 1 (hex_of_int (n / 16));
-			Bytes.set buf3 2 (hex_of_int (n mod 16));
-			print_string (Bytes.unsafe_to_string buf3)
-		end
-	done
 );;
 
 let header_see_other (print_string: string -> unit) (uri: string) = (
