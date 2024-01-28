@@ -79,56 +79,6 @@ module Private = struct
 		end
 	);;
 
-	let decode_uri (source: string) = (
-		let source_length = String.length source in
-		let result = Buffer.create source_length in
-		let i = ref 0 in
-		while !i < source_length do
-			begin match source.[!i] with
-			| '+' ->
-				Buffer.add_char result ' ';
-				incr i
-			| '%' ->
-				incr i;
-				if !i < source_length && is_hex source.[!i] then (
-					let hi = int_of_hex source.[!i] in
-					incr i;
-					if !i < source_length && is_hex source.[!i] then (
-						let lo = int_of_hex source.[!i] in
-						incr i;
-						Buffer.add_char result (char_of_int (hi * 16 + lo))
-					) else (
-						Buffer.add_char result (char_of_int hi)
-					)
-				) else (
-					Buffer.add_char result '\x00'
-				)
-			| _ as c ->
-				Buffer.add_char result c;
-				incr i
-			end
-		done;
-		Buffer.contents result
-	);;
-	
-	let decode_query_string_or_cookie (separator: char) (source: string) = (
-		let rec loop source i result = (
-			let source_length = String.length source in
-			if i < source_length then (
-				let next = try String.index_from source i separator with Not_found -> source_length in
-				let sub_length = next - i in
-				let sub = String.sub source i (next - i) in
-				let eq_pos = try String.index sub '=' with Not_found -> sub_length in
-				let name = String.sub sub 0 eq_pos in
-				let value = decode_uri (String.sub sub (eq_pos + 1) (sub_length - (eq_pos + 1))) in
-				loop source (next + 1) (StringMap.add name value result)
-			) else (
-				result
-			)
-		) in
-		loop source 0 StringMap.empty
-	);;
-
 end;;
 open Private;;
 
@@ -160,6 +110,56 @@ let encode_uri_query (s: string) = (
 		end
 	) in
 	loop s 0 (Bytes.create (String.length s * 3)) 0
+);;
+
+let decode_uri (source: string) = (
+	let source_length = String.length source in
+	let result = Buffer.create source_length in
+	let i = ref 0 in
+	while !i < source_length do
+		begin match source.[!i] with
+		| '+' ->
+			Buffer.add_char result ' ';
+			incr i
+		| '%' ->
+			incr i;
+			if !i < source_length && is_hex source.[!i] then (
+				let hi = int_of_hex source.[!i] in
+				incr i;
+				if !i < source_length && is_hex source.[!i] then (
+					let lo = int_of_hex source.[!i] in
+					incr i;
+					Buffer.add_char result (char_of_int (hi * 16 + lo))
+				) else (
+					Buffer.add_char result (char_of_int hi)
+				)
+			) else (
+				Buffer.add_char result '\x00'
+			)
+		| _ as c ->
+			Buffer.add_char result c;
+			incr i
+		end
+	done;
+	Buffer.contents result
+);;
+
+let decode_query_string_or_cookie (separator: char) (source: string) = (
+	let rec loop source i result = (
+		let source_length = String.length source in
+		if i < source_length then (
+			let next = try String.index_from source i separator with Not_found -> source_length in
+			let sub_length = next - i in
+			let sub = String.sub source i (next - i) in
+			let eq_pos = try String.index sub '=' with Not_found -> sub_length in
+			let name = String.sub sub 0 eq_pos in
+			let value = decode_uri (String.sub sub (eq_pos + 1) (sub_length - (eq_pos + 1))) in
+			loop source (next + 1) (StringMap.add name value result)
+		) else (
+			result
+		)
+	) in
+	loop source 0 StringMap.empty
 );;
 
 let decode_query_string: string -> string StringMap.t = decode_query_string_or_cookie '&';;
