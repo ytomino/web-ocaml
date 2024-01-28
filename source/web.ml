@@ -97,7 +97,7 @@ module Private = struct
 		String.lowercase_ascii request_method_value = "post"
 	);;
 	
-	let decode_uri (source: string): string = (
+	let decode_uri (source: string) = (
 		let source_length = String.length source in
 		let result = Buffer.create source_length in
 		let i = ref 0 in
@@ -129,7 +129,7 @@ module Private = struct
 		Buffer.contents result
 	);;
 	
-	let decode_query_string_or_cookie (separator: char) (source: string): string StringMap.t = (
+	let decode_query_string_or_cookie (separator: char) (source: string) = (
 		let rec loop source i result = (
 			let source_length = String.length source in
 			if i < source_length then (
@@ -150,13 +150,13 @@ module Private = struct
 end;;
 open Private;;
 
-let bool_of_checkbox (value: string): bool = (
+let bool_of_checkbox (value: string) = (
 	String.length value = 2
 	&& Char.lowercase_ascii value.[0] = 'o'
 	&& Char.lowercase_ascii value.[1] = 'n'
 );;
 
-let request_uri (): string = (
+let request_uri () = (
 	let request_uri_value = getenv env_request_uri in
 	let query_string_value = getenv env_query_string in
 	if query_string_value = "" || String.contains request_uri_value '?' then (
@@ -174,7 +174,7 @@ let content_type_xml = "text/xml";;
 
 type post_encoded = [`unknown | `url_encoded | `multipart_form_data];;
 
-let post (): bool = Lazy.force post;;
+let post () = Lazy.force post;;
 
 let post_encoded () = (
 	let content_type_value = getenv env_content_type in
@@ -188,7 +188,7 @@ let post_encoded () = (
 	)
 );;
 
-let post_length (): int = (
+let post_length () = (
 	let content_length_value = getenv env_content_length in
 	try int_of_string content_length_value with Failure _ -> 0
 );;
@@ -197,9 +197,9 @@ let decode_cookie: string -> string StringMap.t = decode_query_string_or_cookie 
 
 let decode_query_string: string -> string StringMap.t = decode_query_string_or_cookie '&';;
 
-let decode_multipart_form_data (source: string): string StringMap.t = (
+let decode_multipart_form_data (source: string) = (
 	let source_length = String.length source in
-	let newline (i: int ref): bool = (
+	let newline (i: int ref) = (
 		if source.[!i] = '\r' then (
 			incr i;
 			if !i < source_length && source.[!i] = '\n' then incr i;
@@ -211,7 +211,7 @@ let decode_multipart_form_data (source: string): string StringMap.t = (
 			false
 		)
 	) in
-	let get_string (i: int ref): string = (
+	let get_string (i: int ref) = (
 		if source.[!i] = '\"' then (
 			incr i;
 			let first = !i in
@@ -225,12 +225,12 @@ let decode_multipart_form_data (source: string): string StringMap.t = (
 			""
 		)
 	) in
-	let skip_spaces (i: int ref): unit = (
+	let skip_spaces (i: int ref) = (
 		while !i < source_length && source.[!i] = ' ' do
 			incr i
 		done
 	) in
-	let match_and_succ (sub: string) (i: int ref): bool = (
+	let match_and_succ (sub: string) (i: int ref) = (
 		let sub_length = String.length sub in
 		if !i + sub_length <= source_length
 			&& String.lowercase_ascii (String.sub source !i sub_length) = sub
@@ -241,7 +241,7 @@ let decode_multipart_form_data (source: string): string StringMap.t = (
 			false
 		)
 	) in
-	let remove_last_crlf (i: int): int = (
+	let remove_last_crlf (i: int) = (
 		let i = if source.[i - 1] = '\n' then pred i else i in
 		let i = if source.[i - 1] = '\r' then pred i else i in i
 	) in
@@ -296,7 +296,7 @@ let decode_multipart_form_data (source: string): string StringMap.t = (
 	!result
 );;
 
-let read_input (): string StringMap.t = (
+let read_input () = (
 	if post () then (
 		let length = post_length () in
 		set_binary_mode_in stdin true;
@@ -311,7 +311,7 @@ let read_input (): string StringMap.t = (
 	)
 );;
 
-let encode_uri (print_string: string -> unit) (s: string): unit = (
+let encode_uri (print_string: string -> unit) (s: string) = (
 	let buf1 = Bytes.make 1 ' ' in
 	let buf3 = Bytes.make 3 '%' in
 	for i = 0 to String.length s - 1 do
@@ -330,7 +330,7 @@ let encode_uri (print_string: string -> unit) (s: string): unit = (
 	done
 );;
 
-let encode_html ~(xhtml: bool) (print_string: string -> unit) (s: string): unit = (
+let encode_html ~(xhtml: bool) (print_string: string -> unit) (s: string) = (
 	let buf1 = Bytes.make 1 ' ' in
 	for i = 0 to String.length s - 1 do
 		begin match s.[i] with
@@ -347,7 +347,7 @@ let encode_html ~(xhtml: bool) (print_string: string -> unit) (s: string): unit 
 	done
 );;
 
-let encode_entity (print_string: string -> unit) (s: string): unit = (
+let encode_entity (print_string: string -> unit) (s: string) = (
 	let buf1 = Bytes.make 1 ' ' in
 	for i = 0 to String.length s - 1 do
 		begin match s.[i] with
@@ -366,24 +366,24 @@ let encode_entity (print_string: string -> unit) (s: string): unit = (
 	done
 );;
 
-let header_see_other (print_string: string -> unit) (uri: string): unit = (
+let header_see_other (print_string: string -> unit) (uri: string) = (
 	print_string "status: 303 See Other\n";
 	print_string "location: ";
 	print_string uri;
 	print_string "\n"
 );;
 
-let header_service_unavailable (print_string: string -> unit): unit = (
+let header_service_unavailable (print_string: string -> unit) = (
 	print_string "status: 503 Service Unavailable\n"
 );;
 
-let header_content_type (print_string: string -> unit) (content_type: string): unit = (
+let header_content_type (print_string: string -> unit) (content_type: string) = (
 	print_string "content-type: ";
 	print_string content_type;
 	print_string "\n"
 );;
 
-let header_cookie (print_string: string -> unit) ?(expires: float option) (cookie: string StringMap.t): unit = (
+let header_cookie (print_string: string -> unit) ?(expires: float option) (cookie: string StringMap.t) = (
 	let expires_image = lazy (
 		begin match expires with
 		| Some time ->
@@ -405,6 +405,6 @@ let header_cookie (print_string: string -> unit) ?(expires: float option) (cooki
 	) cookie
 );;
 
-let header_break (print_string: string -> unit): unit = (
+let header_break (print_string: string -> unit) = (
 	print_string "\n"
 );;
