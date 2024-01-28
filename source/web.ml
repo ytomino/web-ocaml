@@ -112,7 +112,7 @@ let encode_uri_query (s: string) = (
 	loop s 0 (Bytes.create (String.length s * 3)) 0
 );;
 
-let decode_uri (source: string) = (
+let decode_uri_query (source: string) = (
 	let source_length = String.length source in
 	let result = Buffer.create source_length in
 	let i = ref 0 in
@@ -153,7 +153,9 @@ let decode_query_string_or_cookie (separator: char) (source: string) = (
 			let sub = String.sub source i (next - i) in
 			let eq_pos = try String.index sub '=' with Not_found -> sub_length in
 			let name = String.sub sub 0 eq_pos in
-			let value = decode_uri (String.sub sub (eq_pos + 1) (sub_length - (eq_pos + 1))) in
+			let value =
+				decode_uri_query (String.sub sub (eq_pos + 1) (sub_length - (eq_pos + 1)))
+			in
 			loop source (next + 1) (StringMap.add name value result)
 		) else (
 			result

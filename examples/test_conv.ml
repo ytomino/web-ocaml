@@ -1,9 +1,14 @@
 (* URI *)
 
-assert (Web.encode_uri_query "" = "");;
-assert (Web.encode_uri_query "?" = "%3f");;
-assert (Web.encode_uri_query "??" = "%3f%3f");;
-assert (Web.encode_uri_query "0 1" = "0+1");;
+let check_uri encode_uri decode_uri decoded encoded = (
+	String.equal (encode_uri decoded) encoded
+	&& String.equal (decode_uri encoded) decoded
+);;
+
+assert (check_uri Web.encode_uri_query Web.decode_uri_query "" "");;
+assert (check_uri Web.encode_uri_query Web.decode_uri_query "?" "%3f");;
+assert (check_uri Web.encode_uri_query Web.decode_uri_query "??" "%3f%3f");;
+assert (check_uri Web.encode_uri_query Web.decode_uri_query "0 1" "0+1");;
 
 (* Content-type *)
 
