@@ -150,12 +150,6 @@ module Private = struct
 end;;
 open Private;;
 
-let bool_of_checkbox (value: string) = (
-	String.length value = 2
-	&& Char.lowercase_ascii value.[0] = 'o'
-	&& Char.lowercase_ascii value.[1] = 'n'
-);;
-
 let request_uri () = (
 	let request_uri_value = getenv env_request_uri in
 	let query_string_value = getenv env_query_string in
@@ -330,42 +324,6 @@ let encode_uri (print_string: string -> unit) (s: string) = (
 	done
 );;
 
-let encode_html ~(xhtml: bool) (print_string: string -> unit) (s: string) = (
-	let buf1 = Bytes.make 1 ' ' in
-	for i = 0 to String.length s - 1 do
-		begin match s.[i] with
-		| '&' -> print_string "&amp;"
-		| '<' -> print_string "&lt;"
-		| '>' -> print_string "&gt;"
-		| ' ' -> print_string "&#32;"
-		| '\n' -> print_string (if xhtml then "<br />" else "<br>")
-		| '\r' -> ()
-		| _ as c ->
-			Bytes.set buf1 0 c;
-			print_string (Bytes.unsafe_to_string buf1)
-		end
-	done
-);;
-
-let encode_entity (print_string: string -> unit) (s: string) = (
-	let buf1 = Bytes.make 1 ' ' in
-	for i = 0 to String.length s - 1 do
-		begin match s.[i] with
-		| '&' -> print_string "&amp;"
-		| '<' -> print_string "&lt;"
-		| '>' -> print_string "&gt;"
-		| ' ' -> print_string "&#32;"
-		| '\'' -> print_string "&apos;"
-		| '\"' -> print_string "&quot;"
-		| '\n' -> print_string "&#10;"
-		| '\r' -> ()
-		| _ as c ->
-			Bytes.set buf1 0 c;
-			print_string (Bytes.unsafe_to_string buf1)
-		end
-	done
-);;
-
 let header_see_other (print_string: string -> unit) (uri: string) = (
 	print_string "status: 303 See Other\n";
 	print_string "location: ";
@@ -408,3 +366,5 @@ let header_cookie (print_string: string -> unit) ?(expires: float option) (cooki
 let header_break (print_string: string -> unit) = (
 	print_string "\n"
 );;
+
+module HTML = Web__HTML;;
