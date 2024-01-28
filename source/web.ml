@@ -2,10 +2,6 @@ module StringMap = Map.Make(String);;
 
 module Private = struct
 
-	let getenv name = (
-		try Sys.getenv name with Not_found -> ""
-	);;
-
 	let prefixed sub s = (
 		let sub_length = String.length sub in
 		let s_length = String.length s in
@@ -83,20 +79,6 @@ module Private = struct
 		end
 	);;
 
-	let env_request_uri = "REQUEST_URI";;
-	let env_query_string = "QUERY_STRING";;
-	let env_http_cookie = "HTTP_COOKIE";;
-	let env_request_method = "REQUEST_METHOD";;
-	let env_content_type = "CONTENT_TYPE";;
-	let env_content_length = "CONTENT_LENGTH";;
-	let env_remote_addr = "REMOTE_ADDR";;
-	let env_remote_host = "REMOTE_HOST";;
-
-	let post = lazy (
-		let request_method_value = getenv env_request_method in
-		String.lowercase_ascii request_method_value = "post"
-	);;
-	
 	let decode_uri (source: string) = (
 		let source_length = String.length source in
 		let result = Buffer.create source_length in
@@ -150,16 +132,6 @@ module Private = struct
 end;;
 open Private;;
 
-let request_uri () = (
-	let request_uri_value = getenv env_request_uri in
-	let query_string_value = getenv env_query_string in
-	if query_string_value = "" || String.contains request_uri_value '?' then (
-		request_uri_value
-	) else (
-		request_uri_value ^ "?" ^ query_string_value
-	)
-);;
-
 let content_type_multipart_form_data = "multipart/form-data";;
 let content_type_url_encoded = "application/x-www-form-urlencoded";;
 let content_type_text = "text/plain";;
@@ -167,8 +139,6 @@ let content_type_html = "text/html";;
 let content_type_xml = "text/xml";;
 
 type post_encoded = [`unknown | `url_encoded | `multipart_form_data];;
-
-let post () = Lazy.force post;;
 
 let decode_content_type (s: string) = (
 	let content_type_value = String.lowercase_ascii s in
@@ -179,16 +149,6 @@ let decode_content_type (s: string) = (
 	) else (
 		`unknown
 	)
-);;
-
-let post_encoded () = (
-	let content_type_value = getenv env_content_type in
-	decode_content_type content_type_value
-);;
-
-let post_length () = (
-	let content_length_value = getenv env_content_length in
-	try int_of_string content_length_value with Failure _ -> 0
 );;
 
 let decode_cookie: string -> string StringMap.t = decode_query_string_or_cookie ';';;
@@ -294,21 +254,6 @@ let decode_multipart_form_data (source: string) = (
 	!result
 );;
 
-let read_input () = (
-	if post () then (
-		let length = post_length () in
-		set_binary_mode_in stdin true;
-		let data = really_input_string stdin length in
-		begin match post_encoded () with
-		| `url_encoded -> decode_query_string data
-		| `multipart_form_data -> decode_multipart_form_data data
-		| `unknown -> StringMap.empty
-		end
-	) else (
-		StringMap.empty
-	)
-);;
-
 let encode_uri (print_string: string -> unit) (s: string) = (
 	let buf1 = Bytes.make 1 ' ' in
 	let buf3 = Bytes.make 3 '%' in
@@ -371,4 +316,5 @@ let header_break (print_string: string -> unit) = (
 	print_string "\n"
 );;
 
+module CGI = Web__CGI
 module HTML = Web__HTML;;
