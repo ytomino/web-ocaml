@@ -11,6 +11,7 @@ val content_type_xml: string
 type post_encoded = [`unknown | `url_encoded | `multipart_form_data]
 
 val post: unit -> bool
+val decode_content_type: string -> post_encoded
 val post_encoded: unit -> post_encoded
 val post_length: unit -> int
 val decode_cookie: string -> string StringMap.t

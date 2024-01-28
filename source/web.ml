@@ -170,9 +170,8 @@ type post_encoded = [`unknown | `url_encoded | `multipart_form_data];;
 
 let post () = Lazy.force post;;
 
-let post_encoded () = (
-	let content_type_value = getenv env_content_type in
-	let content_type_value = String.lowercase_ascii content_type_value in
+let decode_content_type (s: string) = (
+	let content_type_value = String.lowercase_ascii s in
 	if prefixed content_type_url_encoded content_type_value then (
 		`url_encoded
 	) else if prefixed content_type_multipart_form_data content_type_value then (
@@ -180,6 +179,11 @@ let post_encoded () = (
 	) else (
 		`unknown
 	)
+);;
+
+let post_encoded () = (
+	let content_type_value = getenv env_content_type in
+	decode_content_type content_type_value
 );;
 
 let post_length () = (

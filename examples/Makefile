@@ -20,8 +20,9 @@ BINLN=$(and $(filter $(BUILD),$(TARGET)), \
         $(if $(findstring mingw,$(BUILD))$(findstring msys,$(BUILD)),,bin))
 
 EXAMPLES=$(basename $(wildcard *.ml))
+TESTS=$(filter test_%,$(EXAMPLES))
 
-.PHONY: all check interacitve clean
+.PHONY: all check interacitve clean $(TESTS)
 
 all: \
 	$(and $(OCAMLC),$(patsubst %,$(BUILDDIR)/%.byte.exe,$(EXAMPLES))) \
@@ -49,7 +50,13 @@ $(and $(OCAMLOPT),$(BUILDDIR)/web.cmxa)&: \
 $(BINLN):
 	ln -s $(BUILDDIR) $@
 
-check: all
+check: all $(TESTS)
+
+$(TESTS): %: \
+		$(and $(OCAMLC),$(BUILDDIR)/%.byte.exe) \
+		$(and $(OCAMLOPT),$(BUILDDIR)/%.opt.exe)
+	$(and $(OCAMLC),$<)
+	$(and $(OCAMLOPT),$(BUILDDIR)/$*.opt.exe)
 
 interactive: $(BUILDDIR)/web.cma
 	$(RLWRAP) ocaml $(OCAMLCFLAGS) -I $(BUILDDIR) unix.cma web.cma
