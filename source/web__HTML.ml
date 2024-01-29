@@ -4,7 +4,9 @@ let bool_of_checkbox (value: string): bool = (
 	&& Char.lowercase_ascii value.[1] = 'n'
 );;
 
-let encode_html ~(xhtml: bool) (print_string: string -> unit) (s: string) = (
+let text_output_string ~(xhtml: bool) (print_string: string -> unit)
+	(s: string) =
+(
 	let buf1 = Bytes.make 1 ' ' in
 	for i = 0 to String.length s - 1 do
 		begin match s.[i] with
@@ -21,7 +23,7 @@ let encode_html ~(xhtml: bool) (print_string: string -> unit) (s: string) = (
 	done
 );;
 
-let encode_entity (print_string: string -> unit) (s: string) = (
+let attribute_output_string (print_string: string -> unit) (s: string) = (
 	let buf1 = Bytes.make 1 ' ' in
 	for i = 0 to String.length s - 1 do
 		begin match s.[i] with
