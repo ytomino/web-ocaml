@@ -1,3 +1,12 @@
+(* Date *)
+
+let posix_zero_time = "Thu, 01 Jan 1970 00:00:00 GMT" in
+assert (Web.encode_date 0. = posix_zero_time);
+assert (Web.decode_date posix_zero_time = 0.);;
+
+let the_time = "Sun, 31 Dec 2000 23:59:59 GMT" in
+assert (Web.encode_date (Web.decode_date the_time) = the_time);;
+
 (* URI *)
 
 let check_uri encode_uri decode_uri decoded encoded = (
