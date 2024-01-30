@@ -6,6 +6,8 @@ val content_type_text: string
 val content_type_html: string
 val content_type_xml: string
 
+val encode_date: float -> string
+val decode_date: string -> float
 val encode_uri_query: string -> string
 val decode_uri_query: string -> string
 val decode_query_string: string -> string StringMap.t

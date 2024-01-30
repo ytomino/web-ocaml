@@ -61,24 +61,6 @@ module Private = struct
 		end
 	);;
 
-	let string_of_month month = (
-		begin match month with
-		| 0 -> "Jan"
-		| 1 -> "Feb"
-		| 2 -> "Mar"
-		| 3 -> "Apr"
-		| 4 -> "May"
-		| 5 -> "Jun"
-		| 6 -> "Jul"
-		| 7 -> "Aug"
-		| 8 -> "Sep"
-		| 9 -> "Oct"
-		| 10 -> "Nov"
-		| 11 -> "Dec"
-		| _ -> raise (Failure "string_of_month")
-		end
-	);;
-
 end;;
 open Private;;
 
@@ -87,6 +69,71 @@ let content_type_url_encoded = "application/x-www-form-urlencoded";;
 let content_type_text = "text/plain";;
 let content_type_html = "text/html";;
 let content_type_xml = "text/xml";;
+
+let month_data = [|
+	"Jan";
+	"Feb";
+	"Mar";
+	"Apr";
+	"May";
+	"Jun";
+	"Jul";
+	"Aug";
+	"Sep";
+	"Oct";
+	"Nov";
+	"Dec"
+|];;
+
+let string_of_month = Array.get month_data;;
+
+let month_of_string: string -> int =
+	let rec loop i s = (
+		if month_data.(i) = s then i else
+		if i < 11 then loop (i + 1) s
+		else raise (Failure "month_of_string")
+	) in
+	loop 0;;
+
+let encode_date (time: float) = (
+	let t = Unix.gmtime time in
+	Printf.sprintf "%s, %.2d %s %.4d %.2d:%.2d:%.2d GMT"
+		(string_of_weekday t.Unix.tm_wday) t.Unix.tm_mday
+		(string_of_month t.Unix.tm_mon) (t.Unix.tm_year + 1900) t.Unix.tm_hour
+		t.Unix.tm_min t.Unix.tm_sec
+);;
+
+let timegm (tm: Unix.tm) = (
+	let env_tz = "TZ" in
+	let original_tz = Sys.getenv_opt env_tz in
+	Fun.protect ~finally:(fun () ->
+		Unix.putenv env_tz (
+			match original_tz with
+			| None -> ""
+			| Some value -> value
+		)
+	) (fun () ->
+		Unix.putenv env_tz "UTC";
+		Unix.mktime tm
+	)
+);;
+
+let decode_date (s: string) = (
+	if String.length s = 29 && s.[3] = ',' && s.[4] = ' ' && s.[7] = ' '
+		&& s.[11] = ' ' && s.[16] = ' ' && s.[19] = ':' && s.[22] = ':' && s.[25] = ' '
+		&& s.[26] = 'G' && s.[27] = 'M' && s.[28] = 'T'
+	then
+		Scanf.sscanf s "%3s, %2d %3s %4d %2d:%2d:%2d GMT%!"
+			(fun _ tm_mday mon year tm_hour tm_min tm_sec ->
+				let tm =
+					{Unix.tm_sec; tm_min; tm_hour; tm_mday; tm_mon = month_of_string mon;
+						tm_year = year - 1900; tm_wday = 0; tm_yday = 0; tm_isdst = false
+					}
+				in
+				fst (timegm tm)
+			)
+	else invalid_arg "Web.time_of_string"
+);;
 
 let encode_uri_query (s: string) = (
 	let rec loop s s_pos d d_pos = (
@@ -301,11 +348,13 @@ let header_cookie (print_string: string -> unit) ?(expires: float option) (cooki
 	let expires_image = lazy (
 		begin match expires with
 		| Some time ->
-			let t = Unix.gmtime time in
-			Printf.sprintf " expires=%s, %.2d %s %.4d %.2d:%.2d:%.2d GMT;"
-				(string_of_weekday t.Unix.tm_wday) t.Unix.tm_mday
-				(string_of_month t.Unix.tm_mon) (t.Unix.tm_year + 1900) t.Unix.tm_hour
-				t.Unix.tm_min t.Unix.tm_sec
+			let date = encode_date time in
+			let date_length = String.length date in
+			let result = Bytes.create (9 + date_length + 1) in
+			String.blit " expires=" 0 result 0 9;
+			String.blit date 0 result 9 date_length;
+			Bytes.set result (9 + date_length) ';';
+			Bytes.unsafe_to_string result
 		| None -> ""
 		end
 	) in
