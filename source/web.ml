@@ -302,9 +302,10 @@ let header_cookie (print_string: string -> unit) ?(expires: float option) (cooki
 		begin match expires with
 		| Some time ->
 			let t = Unix.gmtime time in
-			Printf.sprintf " expires=%s, %.2d-%s-%.4d %.2d:%.2d:%.2d GMT;" (string_of_weekday t.Unix.tm_wday)
-				t.Unix.tm_mday (string_of_month t.Unix.tm_mon) (t.Unix.tm_year + 1900)
-				t.Unix.tm_hour t.Unix.tm_min t.Unix.tm_sec
+			Printf.sprintf " expires=%s, %.2d %s %.4d %.2d:%.2d:%.2d GMT;"
+				(string_of_weekday t.Unix.tm_wday) t.Unix.tm_mday
+				(string_of_month t.Unix.tm_mon) (t.Unix.tm_year + 1900) t.Unix.tm_hour
+				t.Unix.tm_min t.Unix.tm_sec
 		| None -> ""
 		end
 	) in
