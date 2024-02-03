@@ -1,5 +1,5 @@
 Web.header_content_type print_string Web.content_type_html;;
-Web.header_break print_string;;
+Web.header_break print_string ();;
 print_string "<!DOCTYPE html>";;
 print_string "<html lang=\"";;
 Web.HTML.attribute_output_string print_string "en";;
