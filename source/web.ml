@@ -334,7 +334,7 @@ let header_see_other (print_string: string -> unit) (uri: string) = (
 	print_string "\n"
 );;
 
-let header_service_unavailable (print_string: string -> unit) = (
+let header_service_unavailable (print_string: string -> unit) () = (
 	print_string "status: 503 Service Unavailable\n"
 );;
 
@@ -369,7 +369,7 @@ let header_cookie (print_string: string -> unit) ?(expires: float option) (cooki
 	) cookie
 );;
 
-let header_break (print_string: string -> unit) = (
+let header_break (print_string: string -> unit) () = (
 	print_string "\n"
 );;
 
