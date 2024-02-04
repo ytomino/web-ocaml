@@ -1,10 +1,18 @@
+type version = [`html4 | `html5 | `xhtml1 | `xhtml5 | `xml]
+
 let bool_of_checkbox (value: string): bool = (
 	String.length value = 2
 	&& Char.lowercase_ascii value.[0] = 'o'
 	&& Char.lowercase_ascii value.[1] = 'n'
 );;
 
-let text_output_string ~(xhtml: bool) (print_string: string -> unit)
+let br (version: version) = (
+	match version with
+	| `html4 | `html5 -> "<br>"
+	| `xhtml1 | `xhtml5 | `xml -> "<br />"
+);;
+
+let text_output_string (version: version) (print_string: string -> unit)
 	(s: string) =
 (
 	let buf1 = Bytes.make 1 ' ' in
@@ -14,7 +22,7 @@ let text_output_string ~(xhtml: bool) (print_string: string -> unit)
 		| '<' -> print_string "&lt;"
 		| '>' -> print_string "&gt;"
 		| ' ' -> print_string "&#32;"
-		| '\n' -> print_string (if xhtml then "<br />" else "<br>")
+		| '\n' -> print_string (br version)
 		| '\r' -> ()
 		| _ as c ->
 			Bytes.set buf1 0 c;
@@ -23,7 +31,9 @@ let text_output_string ~(xhtml: bool) (print_string: string -> unit)
 	done
 );;
 
-let attribute_output_string (print_string: string -> unit) (s: string) = (
+let attribute_output_string (_: version) (print_string: string -> unit)
+	(s: string) =
+(
 	let buf1 = Bytes.make 1 ' ' in
 	for i = 0 to String.length s - 1 do
 		begin match s.[i] with
