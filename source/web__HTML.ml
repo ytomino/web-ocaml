@@ -52,9 +52,31 @@ let apos (version: version) = (
 	| `html5 | `xhtml5 | `xml -> "&apos;"
 );;
 
-let attribute_output_string (version: version) (print_string: string -> unit)
-	(s: string) =
+module Attribute = struct
+	type attribute_context = {
+		version: version;
+		print_string: string -> unit
+	};;
+end;;
+
+type attribute_context = Attribute.attribute_context;;
+
+let open_attribute (version: version) (print_string: string -> unit)
+	(name: string) =
 (
+	print_string " ";
+	print_string name;
+	print_string "=\"";
+	{Attribute.version; print_string}
+);;
+
+let close_attribute (context: attribute_context) = (
+	let {Attribute.print_string; _} = context in
+	print_string "\""
+);;
+
+let attribute_output_string (context: attribute_context) (s: string) = (
+	let {Attribute.version; print_string} = context in
 	let buf1 = Bytes.make 1 ' ' in
 	for i = 0 to String.length s - 1 do
 		begin match s.[i] with
