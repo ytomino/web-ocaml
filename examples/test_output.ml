@@ -21,4 +21,19 @@ out `html4;
 out `xhtml1;
 assert (Buffer.contents b = "<br><br />");;
 
+(* HTML attribute *)
+
+Buffer.clear b;;
+
+let out version = (
+	Buffer.add_string b "<a";
+	let ac = Web.HTML.open_attribute version (Buffer.add_string b) "href" in
+	Web.HTML.attribute_output_string ac "'";
+	Web.HTML.close_attribute ac;
+	Buffer.add_string b " />"
+) in
+out `xhtml1;
+out `xhtml5;
+assert (Buffer.contents b = "<a href=\"&#39;\" /><a href=\"&apos;\" />");;
+
 prerr_endline "ok";;
