@@ -31,7 +31,14 @@ let text_output_string (version: version) (print_string: string -> unit)
 	done
 );;
 
-let attribute_output_string (_: version) (print_string: string -> unit)
+let apos (version: version) = (
+	match version with
+	| `xhtml1 -> "&#39;"
+	| `html4 (* "&apos;" is illegal for HTML4, but needed for very old browser *)
+	| `html5 | `xhtml5 | `xml -> "&apos;"
+);;
+
+let attribute_output_string (version: version) (print_string: string -> unit)
 	(s: string) =
 (
 	let buf1 = Bytes.make 1 ' ' in
@@ -41,7 +48,7 @@ let attribute_output_string (_: version) (print_string: string -> unit)
 		| '<' -> print_string "&lt;"
 		| '>' -> print_string "&gt;"
 		| ' ' -> print_string "&#32;"
-		| '\'' -> print_string "&apos;"
+		| '\'' -> print_string (apos version)
 		| '\"' -> print_string "&quot;"
 		| '\n' -> print_string "&#10;"
 		| '\r' -> ()
