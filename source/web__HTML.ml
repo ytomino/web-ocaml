@@ -12,9 +12,23 @@ let br (version: version) = (
 	| `xhtml1 | `xhtml5 | `xml -> "<br />"
 );;
 
-let text_output_string (version: version) (print_string: string -> unit)
-	(s: string) =
-(
+module Text = struct
+	type text_context = {
+		version: version;
+		print_string: string -> unit
+	};;
+end;;
+
+type text_context = Text.text_context;;
+
+let open_text (version: version) (print_string: string -> unit) = (
+	{Text.version; print_string}
+);;
+
+let close_text (_: text_context) = ();;
+
+let text_output_string (context: text_context) (s: string) = (
+	let {Text.version; print_string} = context in
 	let buf1 = Bytes.make 1 ' ' in
 	for i = 0 to String.length s - 1 do
 		begin match s.[i] with

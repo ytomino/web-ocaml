@@ -5,7 +5,9 @@ print_string "<html lang=\"";;
 Web.HTML.attribute_output_string `html5 print_string "en";;
 print_string "\">";;
 print_string "<body>";;
-Web.HTML.text_output_string `html5 print_string "Hello, World!";;
+let tc = Web.HTML.open_text `html5 print_string in
+Web.HTML.text_output_string tc "Hello, World!";
+Web.HTML.close_text tc;;
 print_string "</body>";;
 print_string "</html>";;
 print_newline ();;
