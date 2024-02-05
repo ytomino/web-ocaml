@@ -23,13 +23,18 @@ let host () = (
 );;
 
 let request_uri () = (
-	let request_uri_value = getenv env_request_uri in
-	let query_string_value = getenv env_query_string in
-	if query_string_value = "" || String.contains request_uri_value '?' then (
-		request_uri_value
-	) else (
-		request_uri_value ^ "?" ^ query_string_value
-	)
+	let request_uri = getenv env_request_uri in
+	if not (String.contains request_uri '?') then (
+		let query_string = getenv env_query_string in
+		let query_string_length = String.length query_string in
+		if query_string_length = 0 then request_uri else
+		let request_uri_length = String.length request_uri in
+		let result = Bytes.create (request_uri_length + 1 + query_string_length) in
+		String.blit request_uri 0 result 0 request_uri_length;
+		Bytes.set result request_uri_length '?';
+		String.blit query_string 0 result (request_uri_length + 1) query_string_length;
+		Bytes.unsafe_to_string result
+	) else request_uri
 );;
 
 let request_path () = (
