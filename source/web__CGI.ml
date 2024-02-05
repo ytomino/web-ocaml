@@ -28,6 +28,11 @@ let request_uri () = (
 	)
 );;
 
+let cookie () = (
+	let cookie = getenv env_http_cookie in
+	decode_cookie cookie
+);;
+
 let post () = Lazy.force post;;
 
 let post_encoded () = (

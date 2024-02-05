@@ -1,6 +1,7 @@
 open Web
 
 val request_uri: unit -> string
+val cookie: unit -> string StringMap.t
 
 val post: unit -> bool
 val post_encoded: unit -> post_encoded
