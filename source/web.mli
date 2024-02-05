@@ -1,10 +1,10 @@
 module StringMap: Map.S with type key = string
 
-val content_type_multipart_form_data: string
-val content_type_url_encoded: string
-val content_type_text: string
-val content_type_html: string
-val content_type_xml: string
+val application_x_www_form_urlencoded: string
+val multipart_form_data: string
+val text_html: string
+val text_plain: string
+val text_xml: string
 
 val encode_date: float -> string
 val decode_date: string -> float
