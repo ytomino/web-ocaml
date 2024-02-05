@@ -3,6 +3,7 @@ open Web
 val host: unit -> string
 val request_uri: unit -> string
 val request_path: unit -> string
+val query: unit -> string StringMap.t
 val cookie: unit -> string StringMap.t
 
 val post: unit -> bool

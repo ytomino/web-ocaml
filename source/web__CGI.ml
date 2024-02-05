@@ -39,6 +39,19 @@ let request_path () = (
 	| Some pos -> String.sub request_uri 0 pos
 );;
 
+let query () = (
+	let query_string =
+		let request_uri = getenv env_request_uri in
+		match String.index_opt request_uri '?' with
+		| None ->
+			getenv env_query_string
+		| Some pos ->
+			let pos = pos + 1 in (* skip '?' *)
+			String.sub request_uri pos (String.length request_uri - pos)
+	in
+	decode_query_string query_string
+);;
+
 let cookie () = (
 	let cookie = getenv env_http_cookie in
 	decode_cookie cookie
