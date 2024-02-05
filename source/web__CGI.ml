@@ -4,6 +4,8 @@ let getenv name = (
 	try Sys.getenv name with Not_found -> ""
 );;
 
+let env_http_host = "HTTP_HOST";;
+let env_server_name = "SERVER_NAME";;
 let env_request_uri = "REQUEST_URI";;
 let env_query_string = "QUERY_STRING";;
 let env_http_cookie = "HTTP_COOKIE";;
@@ -12,6 +14,12 @@ let env_content_type = "CONTENT_TYPE";;
 let env_content_length = "CONTENT_LENGTH";;
 let env_remote_addr = "REMOTE_ADDR";;
 let env_remote_host = "REMOTE_HOST";;
+
+let host () = (
+	let http_host = getenv env_http_host in
+	if String.length http_host <> 0 then http_host
+	else getenv env_server_name
+);;
 
 let request_uri () = (
 	let request_uri_value = getenv env_request_uri in
