@@ -54,7 +54,7 @@ let post_length () = (
 	try int_of_string content_length_value with Failure _ -> 0
 );;
 
-let read_input () = (
+let read_post () = (
 	if post () then (
 		let length = post_length () in
 		set_binary_mode_in stdin true;
