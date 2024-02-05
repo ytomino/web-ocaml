@@ -347,28 +347,30 @@ let header_content_type (print_string: string -> unit) (content_type: string) = 
 );;
 
 let header_cookie (print_string: string -> unit) ?(expires: float option) (cookie: string StringMap.t) = (
-	let expires_image = lazy (
-		begin match expires with
-		| Some time ->
-			let date = encode_date time in
-			let date_length = String.length date in
-			let result = Bytes.create (9 + date_length + 1) in
-			String.blit " expires=" 0 result 0 9;
-			String.blit date 0 result 9 date_length;
-			Bytes.set result (9 + date_length) ';';
-			Bytes.unsafe_to_string result
-		| None -> ""
-		end
-	) in
-	StringMap.iter (fun key value ->
-		print_string "set-cookie: ";
-		print_string key;
-		print_string "=";
-		print_string (encode_uri_query value);
-		print_string ";";
-		print_string (Lazy.force expires_image);
-		print_string "\n"
-	) cookie
+	if not (StringMap.is_empty cookie) then (
+		let expires_image =
+			begin match expires with
+			| Some time ->
+				let date = encode_date time in
+				let date_length = String.length date in
+				let result = Bytes.create (9 + date_length + 1) in
+				String.blit " expires=" 0 result 0 9;
+				String.blit date 0 result 9 date_length;
+				Bytes.set result (9 + date_length) ';';
+				Bytes.unsafe_to_string result
+			| None -> ""
+			end
+		in
+		StringMap.iter (fun key value ->
+			print_string "set-cookie: ";
+			print_string key;
+			print_string "=";
+			print_string (encode_uri_query value);
+			print_string ";";
+			print_string expires_image;
+			print_string "\n"
+		) cookie
+	)
 );;
 
 let header_break (print_string: string -> unit) () = (

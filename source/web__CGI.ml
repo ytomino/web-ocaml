@@ -62,12 +62,10 @@ let cookie () = (
 	decode_cookie cookie
 );;
 
-let post = lazy (
+let post () = (
 	let request_method_value = getenv env_request_method in
 	String.lowercase_ascii request_method_value = "post"
 );;
-
-let post () = Lazy.force post;;
 
 let post_encoded () = (
 	let content_type_value = getenv env_content_type in
