@@ -13,11 +13,6 @@ let env_content_length = "CONTENT_LENGTH";;
 let env_remote_addr = "REMOTE_ADDR";;
 let env_remote_host = "REMOTE_HOST";;
 
-let post = lazy (
-	let request_method_value = getenv env_request_method in
-	String.lowercase_ascii request_method_value = "post"
-);;
-
 let request_uri () = (
 	let request_uri_value = getenv env_request_uri in
 	let query_string_value = getenv env_query_string in
@@ -31,6 +26,11 @@ let request_uri () = (
 let cookie () = (
 	let cookie = getenv env_http_cookie in
 	decode_cookie cookie
+);;
+
+let post = lazy (
+	let request_method_value = getenv env_request_method in
+	String.lowercase_ascii request_method_value = "post"
 );;
 
 let post () = Lazy.force post;;
