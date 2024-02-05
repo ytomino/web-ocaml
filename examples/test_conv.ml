@@ -19,6 +19,28 @@ assert (check_uri Web.encode_uri_query Web.decode_uri_query "?" "%3f");;
 assert (check_uri Web.encode_uri_query Web.decode_uri_query "??" "%3f%3f");;
 assert (check_uri Web.encode_uri_query Web.decode_uri_query "0 1" "0+1");;
 
+(* Query *)
+
+let m = Web.decode_query_string "" in
+assert (Web.StringMap.is_empty m);;
+
+let m = Web.decode_query_string "namae=%E5%B1%B1%E7%94%B0" in
+assert (Web.StringMap.find "namae" m = "山田");;
+
+let m = Web.decode_query_string "name=Yamada&namae=%E5%B1%B1%E7%94%B0" in
+assert (Web.StringMap.find "name" m = "Yamada");
+assert (Web.StringMap.find "namae" m = "山田");;
+
+let m = Web.decode_query_string "name=&namae=" in
+assert (Web.StringMap.find "name" m = "");
+assert (Web.StringMap.find "namae" m = "");;
+
+(* Cookie *)
+
+let m = Web.decode_cookie "name=Yamada; namae=%E5%B1%B1%E7%94%B0" in
+assert (Web.StringMap.find "name" m = "Yamada");
+assert (Web.StringMap.find "namae" m = "山田");;
+
 (* Content-type *)
 
 assert (Web.decode_content_type "" = `unknown);;
@@ -30,5 +52,22 @@ assert (
 	Web.decode_content_type "multipart/form-data; boundary=BOUNDARY"
 	= `multipart_form_data
 );;
+
+(* multipart/form-data *)
+
+let m =
+	Web.decode_multipart_form_data "\
+		---boundary\n\
+		Content-Disposition: form-data; name=\"name\"\n\
+		\n\
+		Yamada\n\
+		---boundary\n\
+		Content-Disposition: form-data; name=\"namae\"\n\
+		\n\
+		山田\n\
+		---boundary--\n"
+in
+assert (Web.StringMap.find "name" m = "Yamada");
+assert (Web.StringMap.find "namae" m = "山田");;
 
 prerr_endline "ok";;

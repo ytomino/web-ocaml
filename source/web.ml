@@ -191,8 +191,14 @@ let decode_uri_query (source: string) = (
 	Buffer.contents result
 );;
 
-let decode_query_string_or_cookie (separator: char) (source: string) = (
-	let rec loop source i result = (
+let rec skip_spaces (s: string) (i: int) = (
+	if i >= String.length s || s.[i] <> ' ' then i
+	else skip_spaces s (i + 1)
+);;
+
+let decode_query_string_or_cookie: char -> (string -> int -> int) -> string ->
+	string StringMap.t =
+	let rec loop i result separator succ source = (
 		let source_length = String.length source in
 		if i < source_length then (
 			let next = try String.index_from source i separator with Not_found -> source_length in
@@ -203,17 +209,18 @@ let decode_query_string_or_cookie (separator: char) (source: string) = (
 			let value =
 				decode_uri_query (String.sub sub (eq_pos + 1) (sub_length - (eq_pos + 1)))
 			in
-			loop source (next + 1) (StringMap.add name value result)
+			loop (succ source next) (StringMap.add name value result) separator succ source
 		) else (
 			result
 		)
 	) in
-	loop source 0 StringMap.empty
-);;
+	loop 0 StringMap.empty;;
 
-let decode_query_string: string -> string StringMap.t = decode_query_string_or_cookie '&';;
+let decode_query_string: string -> string StringMap.t =
+	decode_query_string_or_cookie '&' (fun _ i -> i + 1);;
 
-let decode_cookie: string -> string StringMap.t = decode_query_string_or_cookie ';';;
+let decode_cookie: string -> string StringMap.t =
+	decode_query_string_or_cookie ';' (fun s i -> skip_spaces s (i + 1));;
 
 type post_encoded = [`unknown | `url_encoded | `multipart_form_data];;
 
@@ -256,11 +263,6 @@ let decode_multipart_form_data (source: string) = (
 			""
 		)
 	) in
-	let skip_spaces (i: int ref) = (
-		while !i < source_length && source.[!i] = ' ' do
-			incr i
-		done
-	) in
 	let match_and_succ (sub: string) (i: int ref) = (
 		let sub_length = String.length sub in
 		if !i + sub_length <= source_length
@@ -288,9 +290,9 @@ let decode_multipart_form_data (source: string) = (
 			let next = try string_index_from source !i boundary with Not_found -> source_length in
 			let last = remove_last_crlf next in
 			if match_and_succ "content-disposition:" i then (
-				skip_spaces i;
+				i := skip_spaces source !i;
 				if match_and_succ "form-data;" i then (
-					skip_spaces i;
+					i := skip_spaces source !i;
 					if match_and_succ "name=" i then (
 						let name = get_string i in
 						if newline i then (
@@ -298,12 +300,12 @@ let decode_multipart_form_data (source: string) = (
 							result := StringMap.add name (String.sub source !i (last - !i)) !result
 						) else if source.[!i] = ';' then (
 							incr i;
-							skip_spaces i;
+							i := skip_spaces source !i;
 							if match_and_succ "filename=" i then (
 								let filename = get_string i in
 								if newline i then (
 									if match_and_succ "content-type:" i then (
-										skip_spaces i;
+										i := skip_spaces source !i;
 										let ct_first = !i in
 										while not (newline i) do
 											incr i
