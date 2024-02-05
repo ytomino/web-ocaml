@@ -13,7 +13,7 @@ val decode_uri_query: string -> string
 val decode_query_string: string -> string StringMap.t
 val decode_cookie: string -> string StringMap.t
 
-type post_encoded = [`unknown | `url_encoded | `multipart_form_data]
+type post_encoded = [`unknown | `urlencoded | `multipart_form_data]
 
 val decode_content_type: string -> post_encoded
 val decode_multipart_form_data: string -> string StringMap.t

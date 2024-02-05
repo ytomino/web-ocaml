@@ -222,12 +222,12 @@ let decode_query_string: string -> string StringMap.t =
 let decode_cookie: string -> string StringMap.t =
 	decode_query_string_or_cookie ';' (fun s i -> skip_spaces s (i + 1));;
 
-type post_encoded = [`unknown | `url_encoded | `multipart_form_data];;
+type post_encoded = [`unknown | `urlencoded | `multipart_form_data];;
 
 let decode_content_type (s: string) = (
 	let content_type_value = String.lowercase_ascii s in
 	if prefixed application_x_www_form_urlencoded content_type_value then (
-		`url_encoded
+		`urlencoded
 	) else if prefixed multipart_form_data content_type_value then (
 		`multipart_form_data
 	) else (
