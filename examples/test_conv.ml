@@ -45,7 +45,7 @@ assert (Web.StringMap.find "namae" m = "山田");;
 
 assert (Web.decode_content_type "" = `unknown);;
 assert (
-	Web.decode_content_type "application/x-www-form-urlencoded" = `url_encoded
+	Web.decode_content_type "application/x-www-form-urlencoded" = `urlencoded
 );;
 assert (Web.decode_content_type "multipart/form-data" = `multipart_form_data);;
 assert (

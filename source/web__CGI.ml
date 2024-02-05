@@ -60,7 +60,7 @@ let read_input () = (
 		set_binary_mode_in stdin true;
 		let data = really_input_string stdin length in
 		begin match post_encoded () with
-		| `url_encoded -> decode_query_string data
+		| `urlencoded -> decode_query_string data
 		| `multipart_form_data -> decode_multipart_form_data data
 		| `unknown -> StringMap.empty
 		end
