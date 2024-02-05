@@ -54,3 +54,7 @@ let read_input () = (
 		StringMap.empty
 	)
 );;
+
+let remote_addr () = getenv env_remote_addr;;
+
+let remote_host () = getenv env_remote_host;;
