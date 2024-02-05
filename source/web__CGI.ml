@@ -14,6 +14,7 @@ let env_content_type = "CONTENT_TYPE";;
 let env_content_length = "CONTENT_LENGTH";;
 let env_remote_addr = "REMOTE_ADDR";;
 let env_remote_host = "REMOTE_HOST";;
+let env_user_agent = "HTTP_USER_AGENT";;
 
 let host () = (
 	let http_host = getenv env_http_host in
@@ -71,3 +72,5 @@ let read_input () = (
 let remote_addr () = getenv env_remote_addr;;
 
 let remote_host () = getenv env_remote_host;;
+
+let user_agent () = getenv env_user_agent;;
