@@ -64,11 +64,11 @@ module Private = struct
 end;;
 open Private;;
 
-let content_type_multipart_form_data = "multipart/form-data";;
-let content_type_url_encoded = "application/x-www-form-urlencoded";;
-let content_type_text = "text/plain";;
-let content_type_html = "text/html";;
-let content_type_xml = "text/xml";;
+let application_x_www_form_urlencoded = "application/x-www-form-urlencoded";;
+let multipart_form_data = "multipart/form-data";;
+let text_html = "text/html";;
+let text_plain = "text/plain";;
+let text_xml = "text/xml";;
 
 let month_data = [|
 	"Jan";
@@ -226,9 +226,9 @@ type post_encoded = [`unknown | `url_encoded | `multipart_form_data];;
 
 let decode_content_type (s: string) = (
 	let content_type_value = String.lowercase_ascii s in
-	if prefixed content_type_url_encoded content_type_value then (
+	if prefixed application_x_www_form_urlencoded content_type_value then (
 		`url_encoded
-	) else if prefixed content_type_multipart_form_data content_type_value then (
+	) else if prefixed multipart_form_data content_type_value then (
 		`multipart_form_data
 	) else (
 		`unknown
