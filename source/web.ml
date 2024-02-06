@@ -142,10 +142,11 @@ let encode_uri_query (s: string) = (
 			else Bytes.unsafe_to_string d
 		) else
 		begin match s.[s_pos] with
-		| ' ' ->
+		| ' ' -> (* additional conversion for query *)
 			Bytes.set d d_pos '+';
 			loop s (s_pos + 1) d (d_pos + 1)
-		| ('0'..'9' as c) | ('A'..'Z' as c) | ('a'..'z' as c) | (':' as c) | ('/' as c) | ('.' as c) ->
+		| '0'..'9' | 'A'..'Z' | 'a'..'z'
+		| '-' | '_' | '.' | '!' | '~' | '*' | '\'' | '(' | ')' (* unreserved *) as c ->
 			Bytes.set d d_pos c;
 			loop s (s_pos + 1) d (d_pos + 1)
 		| _ as c ->
@@ -165,7 +166,7 @@ let decode_uri_query (source: string) = (
 	let i = ref 0 in
 	while !i < source_length do
 		begin match source.[!i] with
-		| '+' ->
+		| '+' -> (* additional conversion for query *)
 			Buffer.add_char result ' ';
 			incr i
 		| '%' ->
