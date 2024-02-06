@@ -8,6 +8,8 @@ val text_xml: string
 
 val encode_date: float -> string
 val decode_date: string -> float
+val encode_uri_path: string -> string
+val decode_uri_path: string -> string
 val encode_uri_query: string -> string
 val decode_uri_query: string -> string
 val decode_query_string: string -> string StringMap.t

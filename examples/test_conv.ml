@@ -14,13 +14,24 @@ let check_uri encode_uri decode_uri decoded encoded = (
 	&& String.equal (decode_uri encoded) decoded
 );;
 
-assert (check_uri Web.encode_uri_query Web.decode_uri_query "" "");;
-assert (
-	check_uri Web.encode_uri_query Web.decode_uri_query "-_.!~*'()" "-_.!~*'()"
-);;
-assert (check_uri Web.encode_uri_query Web.decode_uri_query "?" "%3f");;
-assert (check_uri Web.encode_uri_query Web.decode_uri_query "??" "%3f%3f");;
+List.iter (fun (encode_uri, decode_uri) ->
+	assert (check_uri encode_uri decode_uri "" "");
+	assert (check_uri encode_uri decode_uri "-_.!~*'()" "-_.!~*'()");
+	assert (check_uri encode_uri decode_uri "?" "%3f");
+	assert (check_uri encode_uri decode_uri "??" "%3f%3f")
+) [
+	Web.encode_uri_path, Web.decode_uri_path;
+	Web.encode_uri_query, Web.decode_uri_query
+];;
+assert (check_uri Web.encode_uri_path Web.decode_uri_path "0 1" "0%201");;
 assert (check_uri Web.encode_uri_query Web.decode_uri_query "0 1" "0+1");;
+assert (
+	check_uri Web.encode_uri_path Web.decode_uri_path ":@&=+$," ":@&=+$,"
+);;
+assert (
+	check_uri Web.encode_uri_query Web.decode_uri_query
+		":@&=+$," "%3a%40%26%3d%2b%24%2c"
+);;
 
 (* Query *)
 

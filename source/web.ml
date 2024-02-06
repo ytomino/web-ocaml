@@ -135,62 +135,101 @@ let decode_date (s: string) = (
 	else invalid_arg "Web.time_of_string"
 );;
 
-let encode_uri_query (s: string) = (
-	let rec loop s s_pos d d_pos = (
+let escape_uri (d: bytes) (d_pos: int) (c: char) = (
+	Bytes.set d d_pos '%';
+	let n = int_of_char c in
+	Bytes.set d (d_pos + 1) (hex_of_int (n / 16));
+	Bytes.set d (d_pos + 2) (hex_of_int (n mod 16));
+	d_pos + 3
+);;
+
+let encode_uri: (bytes -> int -> char -> int) -> string -> string =
+	let rec loop f s s_pos d d_pos = (
 		if s_pos >= String.length s then (
 			if d_pos < Bytes.length d then Bytes.sub_string d 0 d_pos
 			else Bytes.unsafe_to_string d
-		) else
-		begin match s.[s_pos] with
+		) else loop f s (s_pos + 1) d (f d d_pos s.[s_pos])
+	) in
+	fun f s -> loop f s 0 (Bytes.create (String.length s * 3)) 0;;
+
+let unescape_uri (d: bytes) (d_pos: int) (s: string) (s_pos: int) = (
+	assert (s.[s_pos] = '%');
+	let s_length = String.length s in
+	let s_pos = s_pos + 1 in (* skip '%' *)
+	if s_pos < s_length && is_hex s.[s_pos] then (
+		let hi = int_of_hex s.[s_pos] in
+		let s_pos = s_pos + 1 in
+		if s_pos < s_length && is_hex s.[s_pos] then (
+			let lo = int_of_hex s.[s_pos] in
+			Bytes.set d d_pos (char_of_int (hi * 16 + lo));
+			s_pos + 1
+		) else (
+			Bytes.set d d_pos (char_of_int hi);
+			s_pos
+		)
+	) else (
+		Bytes.set d d_pos '\x00';
+		s_pos
+	)
+);;
+
+let decode_uri: (bytes -> int -> string -> int -> int) -> string -> string =
+	let rec loop f s s_pos d d_pos = (
+		if s_pos >= String.length s then (
+			if d_pos < Bytes.length d then Bytes.sub_string d 0 d_pos
+			else Bytes.unsafe_to_string d
+		) else loop f s (f d d_pos s s_pos) d (d_pos + 1)
+	) in
+	fun f s -> loop f s 0 (Bytes.create (String.length s)) 0;;
+
+let encode_uri_path: string -> string =
+	encode_uri (fun d d_pos c ->
+		match c with
+		| '0'..'9' | 'A'..'Z' | 'a'..'z'
+		| '-' | '_' | '.' | '!' | '~' | '*' | '\'' | '(' | ')' (* unreserved *)
+		| ':' | '@' | '&' | '=' | '+' | '$' | ',' (* unreserved for path *) as c ->
+			Bytes.set d d_pos c;
+			d_pos + 1
+		| _ as c ->
+			escape_uri d d_pos c
+	);;
+
+let decode_uri_path: string -> string =
+	decode_uri (fun d d_pos s s_pos ->
+		match s.[s_pos] with
+		| '%' ->
+			unescape_uri d d_pos s s_pos
+		| _ as c ->
+			Bytes.set d d_pos c;
+			s_pos + 1
+	);;
+
+let encode_uri_query: string -> string =
+	encode_uri (fun d d_pos c ->
+		match c with
 		| ' ' -> (* additional conversion for query *)
 			Bytes.set d d_pos '+';
-			loop s (s_pos + 1) d (d_pos + 1)
+			d_pos + 1
 		| '0'..'9' | 'A'..'Z' | 'a'..'z'
 		| '-' | '_' | '.' | '!' | '~' | '*' | '\'' | '(' | ')' (* unreserved *) as c ->
 			Bytes.set d d_pos c;
-			loop s (s_pos + 1) d (d_pos + 1)
+			d_pos + 1
 		| _ as c ->
-			Bytes.set d d_pos '%';
-			let n = int_of_char c in
-			Bytes.set d (d_pos + 1) (hex_of_int (n / 16));
-			Bytes.set d (d_pos + 2) (hex_of_int (n mod 16));
-			loop s (s_pos + 1) d (d_pos + 3)
-		end
-	) in
-	loop s 0 (Bytes.create (String.length s * 3)) 0
-);;
+			escape_uri d d_pos c
+	);;
 
-let decode_uri_query (source: string) = (
-	let source_length = String.length source in
-	let result = Buffer.create source_length in
-	let i = ref 0 in
-	while !i < source_length do
-		begin match source.[!i] with
+let decode_uri_query: string -> string =
+	decode_uri (fun d d_pos s s_pos ->
+		match s.[s_pos] with
 		| '+' -> (* additional conversion for query *)
-			Buffer.add_char result ' ';
-			incr i
+			Bytes.set d d_pos ' ';
+			s_pos + 1
 		| '%' ->
-			incr i;
-			if !i < source_length && is_hex source.[!i] then (
-				let hi = int_of_hex source.[!i] in
-				incr i;
-				if !i < source_length && is_hex source.[!i] then (
-					let lo = int_of_hex source.[!i] in
-					incr i;
-					Buffer.add_char result (char_of_int (hi * 16 + lo))
-				) else (
-					Buffer.add_char result (char_of_int hi)
-				)
-			) else (
-				Buffer.add_char result '\x00'
-			)
+			unescape_uri d d_pos s s_pos
 		| _ as c ->
-			Buffer.add_char result c;
-			incr i
-		end
-	done;
-	Buffer.contents result
-);;
+			Bytes.set d d_pos c;
+			s_pos + 1
+	);;
 
 let rec skip_spaces (s: string) (i: int) = (
 	if i >= String.length s || s.[i] <> ' ' then i
