@@ -55,6 +55,10 @@ let m = Web.decode_query_string "name=&namae=" in
 assert (Web.StringMap.find "name" m = "");
 assert (Web.StringMap.find "namae" m = "");;
 
+let m = Web.decode_query_string "nameonly&namaeonly" in
+assert (Web.StringMap.find "nameonly" m = "");
+assert (Web.StringMap.find "namaeonly" m = "");;
+
 (* Cookie *)
 
 let m = Web.decode_cookie "name=Yamada; namae=%E5%B1%B1%E7%94%B0" in
