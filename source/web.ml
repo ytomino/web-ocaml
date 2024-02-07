@@ -1,56 +1,5 @@
 module StringMap = Map.Make(String);;
 
-module Private = struct
-
-	let prefixed sub s = (
-		let sub_length = String.length sub in
-		let s_length = String.length s in
-		if sub_length > s_length then (
-			false
-		) else if sub_length < s_length then (
-			sub = String.sub s 0 sub_length
-		) else (
-			sub = s
-		)
-	);;
-
-	let string_index_from source i sub = (
-		let rec loop i = (
-			let p = String.index_from source i sub.[0] in
-			if p + String.length sub > String.length source then (
-				raise Not_found
-			) else if String.sub source p (String.length sub) = sub then (
-				p
-			) else (
-				loop (p + 1)
-			)
-		) in 
-		loop i
-	);;
-
-	let is_hex c = (
-		begin match c with
-		| '0'..'9' | 'A'..'F' | 'a'..'f' -> true
-		| _ -> false
-		end
-	);;
-
-	let int_of_hex c = (
-		begin match c with
-		| '0'..'9' -> int_of_char c - int_of_char '0'
-		| 'A'..'F' -> int_of_char c - (int_of_char 'A' - 10)
-		| 'a'..'f' -> int_of_char c - (int_of_char 'a' - 10)
-		| _ -> raise (Failure "int_of_hex")
-		end
-	);;
-
-	let hex_of_int n = (
-		"0123456789abcdef".[n]
-	);;
-
-end;;
-open Private;;
-
 let application_x_www_form_urlencoded = "application/x-www-form-urlencoded";;
 let multipart_form_data = "multipart/form-data";;
 let text_html = "text/html";;
@@ -141,6 +90,10 @@ let decode_date (s: string) = (
 	else invalid_arg loc
 );;
 
+let hex_of_int n = (
+	"0123456789abcdef".[n]
+);;
+
 let escape_uri (d: bytes) (d_pos: int) (c: char) = (
 	Bytes.set d d_pos '%';
 	let n = int_of_char c in
@@ -157,6 +110,22 @@ let encode_uri: (bytes -> int -> char -> int) -> string -> string =
 		) else loop f s (s_pos + 1) d (f d d_pos s.[s_pos])
 	) in
 	fun f s -> loop f s 0 (Bytes.create (String.length s * 3)) 0;;
+
+let is_hex c = (
+	begin match c with
+	| '0'..'9' | 'A'..'F' | 'a'..'f' -> true
+	| _ -> false
+	end
+);;
+
+let int_of_hex c = (
+	begin match c with
+	| '0'..'9' -> int_of_char c - int_of_char '0'
+	| 'A'..'F' -> int_of_char c - (int_of_char 'A' - 10)
+	| 'a'..'f' -> int_of_char c - (int_of_char 'a' - 10)
+	| _ -> raise (Failure "int_of_hex")
+	end
+);;
 
 let unescape_uri (d: bytes) (d_pos: int) (s: string) (s_pos: int) = (
 	assert (s.[s_pos] = '%');
@@ -273,6 +242,18 @@ let decode_cookie: string -> string StringMap.t =
 
 type post_encoded = [`unknown | `urlencoded | `multipart_form_data];;
 
+let prefixed sub s = (
+	let sub_length = String.length sub in
+	let s_length = String.length s in
+	if sub_length > s_length then (
+		false
+	) else if sub_length < s_length then (
+		sub = String.sub s 0 sub_length
+	) else (
+		sub = s
+	)
+);;
+
 let decode_content_type (s: string) = (
 	let content_type_value = String.lowercase_ascii s in
 	if prefixed application_x_www_form_urlencoded content_type_value then (
@@ -282,6 +263,20 @@ let decode_content_type (s: string) = (
 	) else (
 		`unknown
 	)
+);;
+
+let string_index_from source i sub = (
+	let rec loop i = (
+		let p = String.index_from source i sub.[0] in
+		if p + String.length sub > String.length source then (
+			raise Not_found
+		) else if String.sub source p (String.length sub) = sub then (
+			p
+		) else (
+			loop (p + 1)
+		)
+	) in
+	loop i
 );;
 
 let decode_multipart_form_data (source: string) = (
