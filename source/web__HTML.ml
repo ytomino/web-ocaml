@@ -35,10 +35,12 @@ let open_text (version: version)
 
 let close_text (_: text_context) = ();;
 
-let text_output_string (context: text_context) (s: string) = (
+let unsafe_text_output_substring (context: text_context) (s: string) (pos: int)
+	(len: int) =
+(
 	let {Text.version; print_substring} = context in
 	let print_string = make_print_string print_substring in
-	for i = 0 to String.length s - 1 do
+	for i = pos to (pos + len - 1) do
 		begin match s.[i] with
 		| '&' -> print_string "&amp;"
 		| '<' -> print_string "&lt;"
@@ -50,6 +52,18 @@ let text_output_string (context: text_context) (s: string) = (
 			print_substring s i 1
 		end
 	done
+);;
+
+let text_output_substring (context: text_context) (s: string) (pos: int)
+	(len: int) =
+(
+	if pos >= 0 && len >= 0 && pos + len <= String.length s
+	then unsafe_text_output_substring context s pos len
+	else invalid_arg "Web.HTML.text_output_substring" (* __FUNCTION__ *)
+);;
+
+let text_output_string (context: text_context) (s: string) = (
+	make_print_string (unsafe_text_output_substring context) s
 );;
 
 let apos (version: version) = (
@@ -84,10 +98,12 @@ let close_attribute (context: attribute_context) = (
 	print_string "\""
 );;
 
-let attribute_output_string (context: attribute_context) (s: string) = (
+let unsafe_attribute_output_substring (context: attribute_context) (s: string)
+	(pos: int) (len: int) =
+(
 	let {Attribute.version; print_substring} = context in
 	let print_string = make_print_string print_substring in
-	for i = 0 to String.length s - 1 do
+	for i = pos to pos + len - 1 do
 		begin match s.[i] with
 		| '&' -> print_string "&amp;"
 		| '<' -> print_string "&lt;"
@@ -101,4 +117,16 @@ let attribute_output_string (context: attribute_context) (s: string) = (
 			print_substring s i 1
 		end
 	done
+);;
+
+let attribute_output_substring (context: attribute_context) (s: string)
+	(pos: int) (len: int) =
+(
+	if pos >= 0 && len >= 0 && pos + len <= String.length s
+	then unsafe_attribute_output_substring context s pos len
+	else invalid_arg "Web.HTML.attribute_output_substring" (* __FUNCTION__ *)
+);;
+
+let attribute_output_string (context: attribute_context) (s: string) = (
+	make_print_string (unsafe_attribute_output_substring context) s
 );;
