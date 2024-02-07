@@ -246,19 +246,22 @@ let decode_query_string_or_cookie: char -> (string -> int -> int) -> string ->
 	string StringMap.t =
 	let rec loop i result separator succ source = (
 		let source_length = String.length source in
-		if i < source_length then (
-			let next = try String.index_from source i separator with Not_found -> source_length in
-			let sub_length = next - i in
-			let sub = String.sub source i (next - i) in
-			let eq_pos = try String.index sub '=' with Not_found -> sub_length in
-			let name = String.sub sub 0 eq_pos in
-			let value =
-				decode_uri_query (String.sub sub (eq_pos + 1) (sub_length - (eq_pos + 1)))
-			in
-			loop (succ source next) (StringMap.add name value result) separator succ source
-		) else (
-			result
-		)
+		if i >= source_length then result else
+		let next =
+			match String.index_from_opt source i separator with
+			| None -> source_length
+			| Some next -> next
+		in
+		let eq_pos, value =
+			match String.index_from_opt source i '=' with
+			| None ->
+				next, ""
+			| Some eq_pos ->
+				let value_pos = eq_pos + 1 in
+				eq_pos, decode_uri_query (String.sub source value_pos (next - value_pos))
+		in
+		let name = String.sub source i (eq_pos - i) in
+		loop (succ source next) (StringMap.add name value result) separator succ source
 	) in
 	loop 0 StringMap.empty;;
 
