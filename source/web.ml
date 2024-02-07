@@ -48,19 +48,6 @@ module Private = struct
 		"0123456789abcdef".[n]
 	);;
 
-	let string_of_weekday wday = (
-		begin match wday with
-		| 0 -> "Sun"
-		| 1 -> "Mon"
-		| 2 -> "Tue"
-		| 3 -> "Wed"
-		| 4 -> "Thu"
-		| 5 -> "Fri"
-		| 6 -> "Sat"
-		| _ -> raise (Failure "string_of_weekday")
-		end
-	);;
-
 end;;
 open Private;;
 
@@ -69,6 +56,28 @@ let multipart_form_data = "multipart/form-data";;
 let text_html = "text/html";;
 let text_plain = "text/plain";;
 let text_xml = "text/xml";;
+
+let array_find_index: string array -> string -> int =
+	let rec loop i a s = (
+		if a.(i) = s then i else
+		if i < Array.length a then loop (i + 1) a s
+		else raise (Failure "array_find_index")
+	) in
+	loop 0;;
+
+let weekday_data = [|
+	"Sun";
+	"Mon";
+	"Tue";
+	"Wed";
+	"Thu";
+	"Fri";
+	"Sat"
+|];;
+
+let string_of_weekday = Array.get weekday_data;;
+
+let weekday_of_string = array_find_index weekday_data;;
 
 let month_data = [|
 	"Jan";
@@ -87,13 +96,7 @@ let month_data = [|
 
 let string_of_month = Array.get month_data;;
 
-let month_of_string: string -> int =
-	let rec loop i s = (
-		if month_data.(i) = s then i else
-		if i < 11 then loop (i + 1) s
-		else raise (Failure "month_of_string")
-	) in
-	loop 0;;
+let month_of_string = array_find_index month_data;;
 
 let encode_date (time: float) = (
 	let t = Unix.gmtime time in
@@ -119,20 +122,23 @@ let timegm (tm: Unix.tm) = (
 );;
 
 let decode_date (s: string) = (
+	let loc = "Web.decode_date" (* __FUNCTION__ *) in
 	if String.length s = 29 && s.[3] = ',' && s.[4] = ' ' && s.[7] = ' '
 		&& s.[11] = ' ' && s.[16] = ' ' && s.[19] = ':' && s.[22] = ':' && s.[25] = ' '
 		&& s.[26] = 'G' && s.[27] = 'M' && s.[28] = 'T'
 	then
 		Scanf.sscanf s "%3s, %2d %3s %4d %2d:%2d:%2d GMT%!"
-			(fun _ tm_mday mon year tm_hour tm_min tm_sec ->
+			(fun tm_wday tm_mday mon year tm_hour tm_min tm_sec ->
 				let tm =
 					{Unix.tm_sec; tm_min; tm_hour; tm_mday; tm_mon = month_of_string mon;
 						tm_year = year - 1900; tm_wday = 0; tm_yday = 0; tm_isdst = false
 					}
 				in
-				fst (timegm tm)
+				let result, normalized_tm = timegm tm in
+				if normalized_tm.Unix.tm_wday = weekday_of_string tm_wday then result
+				else invalid_arg loc
 			)
-	else invalid_arg "Web.time_of_string"
+	else invalid_arg loc
 );;
 
 let escape_uri (d: bytes) (d_pos: int) (c: char) = (
