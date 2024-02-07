@@ -273,18 +273,17 @@ let decode_content_type (s: string) = (
 	)
 );;
 
-let string_index_from source i sub = (
-	let rec loop i = (
-		let p = String.index_from source i sub.[0] in
-		if p + String.length sub > String.length source then (
-			raise Not_found
-		) else if String.sub source p (String.length sub) = sub then (
-			p
-		) else (
-			loop (p + 1)
-		)
+let string_index_from_opt source i sub = (
+	let rec loop source i sub = (
+		match String.index_from_opt source i sub.[0] with
+		| None -> None
+		| Some p as result ->
+			let sub_length = String.length sub in
+			if p + sub_length > String.length source then None else
+			if String.sub source p sub_length = sub then result
+			else loop source (p + 1) sub
 	) in
-	loop i
+	loop source i sub
 );;
 
 let decode_multipart_form_data (source: string) = (
@@ -339,7 +338,11 @@ let decode_multipart_form_data (source: string) = (
 		let boundary = String.sub source 0 (remove_last_crlf !i) in
 		while !i < source_length do
 			let (_: bool) = newline i in
-			let next = try string_index_from source !i boundary with Not_found -> source_length in
+			let next =
+				match string_index_from_opt source !i boundary with
+				| None -> source_length
+				| Some next -> next
+			in
 			let last = remove_last_crlf next in
 			if match_and_succ "content-disposition:" i then (
 				i := skip_spaces source !i;
