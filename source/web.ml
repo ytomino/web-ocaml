@@ -6,11 +6,16 @@ let text_html = "text/html";;
 let text_plain = "text/plain";;
 let text_xml = "text/xml";;
 
-let array_find_index: string array -> string -> int =
-	let rec loop i a s = (
+let array_get (a: string array) (i: int) loc = (
+	if i >= 0 && i < Array.length a then a.(i)
+	else invalid_arg loc
+);;
+
+let array_find_index: string array -> string -> string -> int =
+	let rec loop i a s loc = (
 		if a.(i) = s then i else
-		if i < Array.length a then loop (i + 1) a s
-		else raise (Failure "array_find_index")
+		if i < Array.length a then loop (i + 1) a s loc
+		else invalid_arg loc
 	) in
 	loop 0;;
 
@@ -24,7 +29,7 @@ let weekday_data = [|
 	"Sat"
 |];;
 
-let string_of_weekday = Array.get weekday_data;;
+let string_of_weekday = array_get weekday_data;;
 
 let weekday_of_string = array_find_index weekday_data;;
 
@@ -43,15 +48,16 @@ let month_data = [|
 	"Dec"
 |];;
 
-let string_of_month = Array.get month_data;;
+let string_of_month = array_get month_data;;
 
 let month_of_string = array_find_index month_data;;
 
 let encode_date (time: float) = (
+	let loc = "Web.encode_date" (* __FUNCTION__ *) in
 	let t = Unix.gmtime time in
 	Printf.sprintf "%s, %.2d %s %.4d %.2d:%.2d:%.2d GMT"
-		(string_of_weekday t.Unix.tm_wday) t.Unix.tm_mday
-		(string_of_month t.Unix.tm_mon) (t.Unix.tm_year + 1900) t.Unix.tm_hour
+		(string_of_weekday t.Unix.tm_wday loc) t.Unix.tm_mday
+		(string_of_month t.Unix.tm_mon loc) (t.Unix.tm_year + 1900) t.Unix.tm_hour
 		t.Unix.tm_min t.Unix.tm_sec
 );;
 
@@ -79,12 +85,12 @@ let decode_date (s: string) = (
 		Scanf.sscanf s "%3s, %2d %3s %4d %2d:%2d:%2d GMT%!"
 			(fun tm_wday tm_mday mon year tm_hour tm_min tm_sec ->
 				let tm =
-					{Unix.tm_sec; tm_min; tm_hour; tm_mday; tm_mon = month_of_string mon;
+					{Unix.tm_sec; tm_min; tm_hour; tm_mday; tm_mon = month_of_string mon loc;
 						tm_year = year - 1900; tm_wday = 0; tm_yday = 0; tm_isdst = false
 					}
 				in
 				let result, normalized_tm = timegm tm in
-				if normalized_tm.Unix.tm_wday = weekday_of_string tm_wday then result
+				if normalized_tm.Unix.tm_wday = weekday_of_string tm_wday loc then result
 				else invalid_arg loc
 			)
 	else invalid_arg loc
@@ -118,24 +124,24 @@ let is_hex c = (
 	end
 );;
 
-let int_of_hex c = (
+let int_of_hex c loc = (
 	begin match c with
 	| '0'..'9' -> int_of_char c - int_of_char '0'
 	| 'A'..'F' -> int_of_char c - (int_of_char 'A' - 10)
 	| 'a'..'f' -> int_of_char c - (int_of_char 'a' - 10)
-	| _ -> raise (Failure "int_of_hex")
+	| _ -> invalid_arg loc
 	end
 );;
 
-let unescape_uri (d: bytes) (d_pos: int) (s: string) (s_pos: int) = (
+let unescape_uri (d: bytes) (d_pos: int) (s: string) (s_pos: int) loc = (
 	assert (s.[s_pos] = '%');
 	let s_length = String.length s in
 	let s_pos = s_pos + 1 in (* skip '%' *)
 	if s_pos < s_length && is_hex s.[s_pos] then (
-		let hi = int_of_hex s.[s_pos] in
+		let hi = int_of_hex s.[s_pos] loc in
 		let s_pos = s_pos + 1 in
 		if s_pos < s_length && is_hex s.[s_pos] then (
-			let lo = int_of_hex s.[s_pos] in
+			let lo = int_of_hex s.[s_pos] loc in
 			Bytes.set d d_pos (char_of_int (hi * 16 + lo));
 			s_pos + 1
 		) else (
@@ -171,9 +177,10 @@ let encode_uri_path: string -> string =
 
 let decode_uri_path: string -> string =
 	decode_uri (fun d d_pos s s_pos ->
+		let loc = "Web.decode_uri_path" (* __FUNCTION__ *) in
 		match s.[s_pos] with
 		| '%' ->
-			unescape_uri d d_pos s s_pos
+			unescape_uri d d_pos s s_pos loc
 		| _ as c ->
 			Bytes.set d d_pos c;
 			s_pos + 1
@@ -195,12 +202,13 @@ let encode_uri_query: string -> string =
 
 let decode_uri_query: string -> string =
 	decode_uri (fun d d_pos s s_pos ->
+		let loc = "Web.decode_uri_query" (* __FUNCTION__ *) in
 		match s.[s_pos] with
 		| '+' -> (* additional conversion for query *)
 			Bytes.set d d_pos ' ';
 			s_pos + 1
 		| '%' ->
-			unescape_uri d d_pos s s_pos
+			unescape_uri d d_pos s s_pos loc
 		| _ as c ->
 			Bytes.set d d_pos c;
 			s_pos + 1
