@@ -7,6 +7,12 @@ assert (Web.decode_date posix_zero_time = 0.);;
 let the_time = "Sun, 31 Dec 2000 23:59:59 GMT" in
 assert (Web.encode_date (Web.decode_date the_time) = the_time);;
 
+let the_time = "Mon, 31 Dec 2000 23:59:59 GMT" in (* bad weekday *)
+assert (
+	try let _: float = Web.decode_date the_time in false with
+	| Invalid_argument _ -> true
+);;
+
 (* URI *)
 
 let check_uri encode_uri decode_uri decoded encoded = (
