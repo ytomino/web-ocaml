@@ -384,25 +384,43 @@ let decode_multipart_form_data (source: string) = (
 	!result
 );;
 
-let header_see_other (print_string: string -> unit) (uri: string) = (
+let make_print_string (print_substring: string -> int -> int -> unit)
+	(s: string) =
+(
+	print_substring s 0 (String.length s)
+);;
+
+let header_see_other (print_substring: string -> int -> int -> unit)
+	(uri: string) =
+(
+	let print_string = make_print_string print_substring in
 	print_string "status: 303 See Other\n";
 	print_string "location: ";
 	print_string uri;
 	print_string "\n"
 );;
 
-let header_service_unavailable (print_string: string -> unit) () = (
+let header_service_unavailable (print_substring: string -> int -> int -> unit)
+	() =
+(
+	let print_string = make_print_string print_substring in
 	print_string "status: 503 Service Unavailable\n"
 );;
 
-let header_content_type (print_string: string -> unit) (content_type: string) = (
+let header_content_type (print_substring: string -> int -> int -> unit)
+	(content_type: string) =
+(
+	let print_string = make_print_string print_substring in
 	print_string "content-type: ";
 	print_string content_type;
 	print_string "\n"
 );;
 
-let header_cookie (print_string: string -> unit) ?(expires: float option) (cookie: string StringMap.t) = (
+let header_cookie (print_substring: string -> int -> int -> unit)
+	?(expires: float option) (cookie: string StringMap.t) =
+(
 	if not (StringMap.is_empty cookie) then (
+		let print_string = make_print_string print_substring in
 		let expires_image =
 			begin match expires with
 			| Some time ->
@@ -428,7 +446,8 @@ let header_cookie (print_string: string -> unit) ?(expires: float option) (cooki
 	)
 );;
 
-let header_break (print_string: string -> unit) () = (
+let header_break (print_substring: string -> int -> int -> unit) () = (
+	let print_string = make_print_string print_substring in
 	print_string "\n"
 );;
 
