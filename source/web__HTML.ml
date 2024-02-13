@@ -6,6 +6,12 @@ let bool_of_checkbox (value: string): bool = (
 	&& Char.lowercase_ascii value.[1] = 'n'
 );;
 
+let make_print_range (print_substring: string -> int -> int -> unit)
+	(s: string) (startpos: int) (endpos: int) =
+(
+	if startpos < endpos then print_substring s startpos (endpos - startpos)
+);;
+
 let make_print_string (print_substring: string -> int -> int -> unit)
 	(s: string) =
 (
@@ -35,24 +41,39 @@ let open_text (version: version)
 
 let close_text (_: text_context) = ();;
 
-let unsafe_text_output_substring (context: text_context) (s: string) (pos: int)
-	(len: int) =
-(
-	let {Text.version; print_substring} = context in
-	let print_string = make_print_string print_substring in
-	for i = pos to (pos + len - 1) do
-		begin match s.[i] with
-		| '&' -> print_string "&amp;"
-		| '<' -> print_string "&lt;"
-		| '>' -> print_string "&gt;"
-		| ' ' -> print_string "&#32;"
-		| '\n' -> print_string (br version)
-		| '\r' -> ()
+let unsafe_text_output_substring: text_context -> string -> int -> int ->
+	unit =
+	let rec loop context s start i end_pos = (
+		let {Text.version; print_substring} = context in
+		let print_range = make_print_range print_substring in
+		if i >= end_pos then print_range s start i else
+		match s.[i] with
+		| '&' ->
+			substitute context s start i end_pos "&amp;"
+		| '<' ->
+			substitute context s start i end_pos "&lt;"
+		| '>' ->
+			substitute context s start i end_pos "&gt;"
+		| ' ' ->
+			substitute context s start i end_pos "&#32;"
+		| '\n' ->
+			substitute context s start i end_pos (br version)
+		| '\r' ->
+			print_range s start i;
+			let next = i + 1 in
+			loop context s next next end_pos
 		| _ ->
-			print_substring s i 1
-		end
-	done
-);;
+			loop context s start (i + 1) end_pos
+	) and substitute context s start i end_pos cer = (
+		let {Text.print_substring; _} = context in
+		let print_range = make_print_range print_substring in
+		let print_string = make_print_string print_substring in
+		print_range s start i;
+		print_string cer;
+		let next = i + 1 in
+		loop context s next next end_pos
+	) in
+	fun context s pos len -> loop context s pos pos (pos + len);;
 
 let text_output_substring (context: text_context) (s: string) (pos: int)
 	(len: int) =
@@ -98,26 +119,43 @@ let close_attribute (context: attribute_context) = (
 	print_string "\""
 );;
 
-let unsafe_attribute_output_substring (context: attribute_context) (s: string)
-	(pos: int) (len: int) =
-(
-	let {Attribute.version; print_substring} = context in
-	let print_string = make_print_string print_substring in
-	for i = pos to pos + len - 1 do
-		begin match s.[i] with
-		| '&' -> print_string "&amp;"
-		| '<' -> print_string "&lt;"
-		| '>' -> print_string "&gt;"
-		| ' ' -> print_string "&#32;"
-		| '\'' -> print_string (apos version)
-		| '\"' -> print_string "&quot;"
-		| '\n' -> print_string "&#10;"
-		| '\r' -> ()
+let unsafe_attribute_output_substring: attribute_context -> string -> int ->
+	int -> unit =
+	let rec loop context s start i end_pos = (
+		let {Attribute.version; print_substring} = context in
+		let print_range = make_print_range print_substring in
+		if i >= end_pos then print_range s start i else
+		match s.[i] with
+		| '&' ->
+			substitute context s start i end_pos "&amp;"
+		| '<' ->
+			substitute context s start i end_pos "&lt;"
+		| '>' ->
+			substitute context s start i end_pos "&gt;"
+		| ' ' ->
+			substitute context s start i end_pos "&#32;"
+		| '\'' ->
+			substitute context s start i end_pos (apos version)
+		| '\"' ->
+			substitute context s start i end_pos "&quot;"
+		| '\n' ->
+			substitute context s start i end_pos "&#10;"
+		| '\r' ->
+			print_range s start i;
+			let next = i + 1 in
+			loop context s next next end_pos
 		| _ ->
-			print_substring s i 1
-		end
-	done
-);;
+			loop context s start (i + 1) end_pos
+	) and substitute context s start i end_pos cer = (
+		let {Attribute.print_substring; _} = context in
+		let print_range = make_print_range print_substring in
+		let print_string = make_print_string print_substring in
+		print_range s start i;
+		print_string cer;
+		let next = i + 1 in
+		loop context s next next end_pos
+	) in
+	fun context s pos len -> loop context s pos pos (pos + len);;
 
 let attribute_output_substring (context: attribute_context) (s: string)
 	(pos: int) (len: int) =

@@ -12,6 +12,23 @@ assert (
 
 Buffer.clear b;;
 
+let count = ref 0 in
+let tc =
+	Web.HTML.open_text `html4 (fun s pos len ->
+		incr count;
+		Buffer.add_substring b s pos len
+	)
+in
+count := 0;
+Web.HTML.text_output_string tc "ABCDEFG";
+assert (!count = 1 && Buffer.contents b = "ABCDEFG");
+count := 0;
+Web.HTML.text_output_substring tc ".&H<>I." 1 5;
+assert (!count = 5 && Buffer.contents b = "ABCDEFG&amp;H&lt;&gt;I");
+Web.HTML.close_text tc;;
+
+Buffer.clear b;;
+
 let out version = (
 	let tc = Web.HTML.open_text version (Buffer.add_substring b) in
 	Web.HTML.text_output_string tc "\n";
@@ -22,6 +39,24 @@ out `xhtml1;
 assert (Buffer.contents b = "<br><br />");;
 
 (* HTML attribute *)
+
+Buffer.clear b;;
+
+let count = ref 0 in
+let name = "NAME" in
+let ac =
+	Web.HTML.open_attribute `html4 (fun s pos len ->
+		incr count;
+		Buffer.add_substring b s pos len
+	) name
+in
+count := 0;
+Web.HTML.attribute_output_string ac "ABCDEFG";
+assert (!count = 1 && Buffer.contents b = " NAME=\"ABCDEFG");
+count := 0;
+Web.HTML.attribute_output_substring ac ".&H<>I." 1 5;
+assert (!count = 5 && Buffer.contents b = " NAME=\"ABCDEFG&amp;H&lt;&gt;I");
+Web.HTML.close_attribute ac;;
 
 Buffer.clear b;;
 
