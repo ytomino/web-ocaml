@@ -38,6 +38,21 @@ out `html4;
 out `xhtml1;
 assert (Buffer.contents b = "<br><br />");;
 
+Buffer.clear b;;
+
+let tc = Web.HTML.open_text `html4 (Buffer.add_substring b) in
+Web.HTML.text_output_string tc "\rA\r\nB\r\rC\r";
+Web.HTML.close_text tc;
+assert (Buffer.contents b = "<br>A<br>B<br><br>C<br>");;
+
+Buffer.clear b;;
+
+let tc = Web.HTML.open_text `html5 (Buffer.add_substring b) in
+Web.HTML.text_output_string tc "\r";
+Web.HTML.text_output_string tc "\n";
+Web.HTML.close_text tc;
+assert (Buffer.contents b = "<br>");;
+
 (* HTML attribute *)
 
 Buffer.clear b;;
@@ -70,5 +85,31 @@ let out version = (
 out `xhtml1;
 out `xhtml5;
 assert (Buffer.contents b = "<a href=\"&#39;\" /><a href=\"&apos;\" />");;
+
+Buffer.clear b;;
+
+let out version name = (
+	let ac = Web.HTML.open_attribute version (Buffer.add_substring b) name in
+	Web.HTML.attribute_output_string ac "\rA\r\nB\r\rC\r";
+	Web.HTML.close_attribute ac
+) in
+out `html4 "HTML4";
+out `html5 "HTML5";
+assert (
+	Buffer.contents b
+	= " HTML4=\"\nA\nB\n\nC\n\" HTML5=\"&#13;A&#13;&NewLine;B&#13;&#13;C&#13;\""
+);;
+
+Buffer.clear b;;
+
+let out version name = (
+	let ac = Web.HTML.open_attribute version (Buffer.add_substring b) name in
+	Web.HTML.attribute_output_string ac "\r";
+	Web.HTML.attribute_output_string ac "\n";
+	Web.HTML.close_attribute ac
+) in
+out `html4 "HTML4";
+out `html5 "HTML5";
+assert (Buffer.contents b = " HTML4=\"\n\" HTML5=\"&#13;&NewLine;\"");;
 
 prerr_endline "ok";;
