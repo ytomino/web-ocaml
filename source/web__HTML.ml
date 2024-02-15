@@ -87,6 +87,13 @@ let text_output_string (context: text_context) (s: string) = (
 	make_print_string (unsafe_text_output_substring context) s
 );;
 
+let newline (version: version) = (
+	match version with
+	| `html4 -> "\n" (* for very old browser *)
+	| `html5 -> "&NewLine;"
+	| `xhtml1 | `xhtml5 | `xml -> "&#10;"
+);;
+
 let apos (version: version) = (
 	match version with
 	| `xhtml1 -> "&#39;"
@@ -139,7 +146,7 @@ let unsafe_attribute_output_substring: attribute_context -> string -> int ->
 		| '\"' ->
 			substitute context s start i end_pos "&quot;"
 		| '\n' ->
-			substitute context s start i end_pos "&#10;"
+			substitute context s start i end_pos (newline version)
 		| '\r' ->
 			print_range s start i;
 			let next = i + 1 in
