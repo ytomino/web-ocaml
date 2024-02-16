@@ -30,7 +30,7 @@ Web.HTML.close_text tc;;
 Buffer.clear b;;
 
 let out version = (
-	let tc = Web.HTML.open_text version (Buffer.add_substring b) in
+	let tc = Web.HTML.open_text version ~newline:`br (Buffer.add_substring b) in
 	Web.HTML.text_output_string tc "\n";
 	Web.HTML.close_text tc
 ) in
@@ -40,18 +40,26 @@ assert (Buffer.contents b = "<br><br />");;
 
 Buffer.clear b;;
 
-let tc = Web.HTML.open_text `html4 (Buffer.add_substring b) in
-Web.HTML.text_output_string tc "\rA\r\nB\r\rC\r";
-Web.HTML.close_text tc;
-assert (Buffer.contents b = "<br>A<br>B<br><br>C<br>");;
+let out newline = (
+	let tc = Web.HTML.open_text `html4 ?newline (Buffer.add_substring b) in
+	Web.HTML.text_output_string tc "\rA\r\nB\r\rC\r";
+	Web.HTML.close_text tc
+) in
+out None;
+out (Some `br);
+assert (Buffer.contents b = "\nA\nB\n\nC\n<br>A<br>B<br><br>C<br>");;
 
 Buffer.clear b;;
 
-let tc = Web.HTML.open_text `html5 (Buffer.add_substring b) in
-Web.HTML.text_output_string tc "\r";
-Web.HTML.text_output_string tc "\n";
-Web.HTML.close_text tc;
-assert (Buffer.contents b = "<br>");;
+let out newline = (
+	let tc = Web.HTML.open_text `html5 ?newline (Buffer.add_substring b) in
+	Web.HTML.text_output_string tc "\r";
+	Web.HTML.text_output_string tc "\n";
+	Web.HTML.close_text tc
+) in
+out None;
+out (Some `br);
+assert (Buffer.contents b = "\n<br>");;
 
 (* HTML attribute *)
 

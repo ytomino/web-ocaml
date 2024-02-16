@@ -18,15 +18,10 @@ let make_print_string (print_substring: string -> int -> int -> unit)
 	print_substring s 0 (String.length s)
 );;
 
-let br (version: version) = (
-	match version with
-	| `html4 | `html5 -> "<br>"
-	| `xhtml1 | `xhtml5 | `xml -> "<br />"
-);;
-
 module Text = struct
 	type text_context = {
 		version: version;
+		newline: [`br] option;
 		print_substring: string -> int -> int -> unit;
 		mutable cr: bool
 	};;
@@ -34,17 +29,33 @@ end;;
 
 type text_context = Text.text_context;;
 
-let open_text (version: version)
+let print_newline (context: text_context) = (
+	let {Text.version; newline; print_substring; _} = context in
+	let print_string = make_print_string print_substring in
+	print_string (
+		match newline with
+		| None ->
+			"\n" (* substitute "\r" to "\n" *)
+		| Some `br ->
+			begin match version with
+			| `html4 | `html5 ->
+				"<br>"
+			| `xhtml1 | `xhtml5 | `xml ->
+				"<br />"
+			end
+	)
+);;
+
+let open_text (version: version) ?(newline: [`br] option)
 	(print_substring: string -> int -> int -> unit) =
 (
-	{Text.version; print_substring; cr = false}
+	{Text.version; newline; print_substring; cr = false}
 );;
 
 let close_text (context: text_context) = (
-	let {Text.version; print_substring; cr} = context in
-	let print_string = make_print_string print_substring in
+	let {Text.cr; _} = context in
 	if cr then (
-		print_string (br version);
+		print_newline context;
 		context.Text.cr <- false
 	)
 );;
@@ -52,10 +63,9 @@ let close_text (context: text_context) = (
 let unsafe_text_output_substring: text_context -> string -> int -> int ->
 	unit =
 	let rec loop context s start i end_pos = (
-		let {Text.version; print_substring; cr} = context in
+		let {Text.print_substring; cr; _} = context in
 		assert (start = i || not cr);
 		let print_range = make_print_range print_substring in
-		let print_string = make_print_string print_substring in
 		if i >= end_pos then print_range s start i else
 		match s.[i] with
 		| '&' ->
@@ -69,14 +79,14 @@ let unsafe_text_output_substring: text_context -> string -> int -> int ->
 		| '\n' ->
 			context.Text.cr <- false;
 			print_range s start i;
-			print_string (br version);
+			print_newline context;
 			let next = i + 1 in
 			loop context s next next end_pos
 		| '\r' ->
 			if not cr then (
 				print_range s start i;
 				context.Text.cr <- true
-			) else print_string (br version);
+			) else print_newline context;
 			let next = i + 1 in
 			loop context s next next end_pos
 		| _ ->
