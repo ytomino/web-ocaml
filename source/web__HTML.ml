@@ -177,8 +177,6 @@ let unsafe_attribute_output_substring: attribute_context -> string -> int ->
 			substitute context s start i end_pos "&lt;"
 		| '>' ->
 			substitute context s start i end_pos "&gt;"
-		| ' ' ->
-			substitute context s start i end_pos "&#32;"
 		| '\'' ->
 			substitute context s start i end_pos (apos version)
 		| '\"' ->
