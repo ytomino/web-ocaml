@@ -268,6 +268,10 @@ let insensitive_starts_with_from (sub: string) (s: string) (pos: int) = (
 let decode_content_type (s: string) = (
 	let prefixed sub s = (
 		insensitive_starts_with_from sub s 0
+		&& (
+			let sub_length = String.length sub in
+			String.length s = sub_length || s.[sub_length] = ';'
+		)
 	) in
 	if prefixed application_x_www_form_urlencoded s then (
 		`urlencoded
