@@ -221,24 +221,24 @@ let rec skip_spaces (s: string) (i: int) = (
 
 let decode_query_string_or_cookie: char -> (string -> int -> int) -> string ->
 	string StringMap.t =
-	let rec loop i result separator succ source = (
-		let source_length = String.length source in
-		if i >= source_length then result else
+	let rec loop i result separator succ s = (
+		let s_length = String.length s in
+		if i >= s_length then result else
 		let next =
-			match String.index_from_opt source i separator with
-			| None -> source_length
+			match String.index_from_opt s i separator with
+			| None -> s_length
 			| Some next -> next
 		in
 		let eq_pos, value =
-			match String.index_from_opt source i '=' with
+			match String.index_from_opt s i '=' with
 			| None ->
 				next, ""
 			| Some eq_pos ->
 				let value_pos = eq_pos + 1 in
-				eq_pos, decode_uri_query (String.sub source value_pos (next - value_pos))
+				eq_pos, decode_uri_query (String.sub s value_pos (next - value_pos))
 		in
-		let name = String.sub source i (eq_pos - i) in
-		loop (succ source next) (StringMap.add name value result) separator succ source
+		let name = String.sub s i (eq_pos - i) in
+		loop (succ s next) (StringMap.add name value result) separator succ s
 	) in
 	loop 0 StringMap.empty;;
 
@@ -273,27 +273,27 @@ let decode_content_type (s: string) = (
 	)
 );;
 
-let string_index_from_opt source i sub = (
-	let rec loop source i sub = (
-		match String.index_from_opt source i sub.[0] with
+let string_index_from_opt s i sub = (
+	let rec loop s i sub = (
+		match String.index_from_opt s i sub.[0] with
 		| None -> None
 		| Some p as result ->
 			let sub_length = String.length sub in
-			if p + sub_length > String.length source then None else
-			if String.sub source p sub_length = sub then result
-			else loop source (p + 1) sub
+			if p + sub_length > String.length s then None else
+			if String.sub s p sub_length = sub then result
+			else loop s (p + 1) sub
 	) in
-	loop source i sub
+	loop s i sub
 );;
 
-let decode_multipart_form_data (source: string) = (
-	let source_length = String.length source in
+let decode_multipart_form_data (s: string) = (
+	let s_length = String.length s in
 	let newline (i: int ref) = (
-		if source.[!i] = '\r' then (
+		if s.[!i] = '\r' then (
 			incr i;
-			if !i < source_length && source.[!i] = '\n' then incr i;
+			if !i < s_length && s.[!i] = '\n' then incr i;
 			true
-		) else if source.[!i] = '\n' then (
+		) else if s.[!i] = '\n' then (
 			incr i;
 			true
 		) else (
@@ -301,23 +301,23 @@ let decode_multipart_form_data (source: string) = (
 		)
 	) in
 	let get_string (i: int ref) = (
-		if source.[!i] = '\"' then (
+		if s.[!i] = '\"' then (
 			incr i;
 			let first = !i in
-			while !i < source_length && source.[!i] <> '\"' do
+			while !i < s_length && s.[!i] <> '\"' do
 				incr i
 			done;
 			let last = !i in
 			incr i;
-			String.sub source first (last - first)
+			String.sub s first (last - first)
 		) else (
 			""
 		)
 	) in
 	let match_and_succ (sub: string) (i: int ref) = (
 		let sub_length = String.length sub in
-		if !i + sub_length <= source_length
-			&& String.lowercase_ascii (String.sub source !i sub_length) = sub
+		if !i + sub_length <= s_length
+			&& String.lowercase_ascii (String.sub s !i sub_length) = sub
 		then (
 			i := !i + sub_length;
 			true
@@ -326,49 +326,50 @@ let decode_multipart_form_data (source: string) = (
 		)
 	) in
 	let remove_last_crlf (i: int) = (
-		let i = if source.[i - 1] = '\n' then pred i else i in
-		let i = if source.[i - 1] = '\r' then pred i else i in i
+		let i = if s.[i - 1] = '\n' then pred i else i in
+		let i = if s.[i - 1] = '\r' then pred i else i in
+		i
 	) in
 	let result = ref StringMap.empty in
-	if source.[0] = '-' then (
+	if s.[0] = '-' then (
 		let i = ref 0 in
-		while !i < source_length && not (newline i) do
+		while !i < s_length && not (newline i) do
 			incr i;
 		done;
-		let boundary = String.sub source 0 (remove_last_crlf !i) in
-		while !i < source_length do
+		let boundary = String.sub s 0 (remove_last_crlf !i) in
+		while !i < s_length do
 			let (_: bool) = newline i in
 			let next =
-				match string_index_from_opt source !i boundary with
-				| None -> source_length
+				match string_index_from_opt s !i boundary with
+				| None -> s_length
 				| Some next -> next
 			in
 			let last = remove_last_crlf next in
 			if match_and_succ "content-disposition:" i then (
-				i := skip_spaces source !i;
+				i := skip_spaces s !i;
 				if match_and_succ "form-data;" i then (
-					i := skip_spaces source !i;
+					i := skip_spaces s !i;
 					if match_and_succ "name=" i then (
 						let name = get_string i in
 						if newline i then (
 							let (_: bool) = newline i in
-							result := StringMap.add name (String.sub source !i (last - !i)) !result
-						) else if source.[!i] = ';' then (
+							result := StringMap.add name (String.sub s !i (last - !i)) !result
+						) else if s.[!i] = ';' then (
 							incr i;
-							i := skip_spaces source !i;
+							i := skip_spaces s !i;
 							if match_and_succ "filename=" i then (
 								let filename = get_string i in
 								if newline i then (
 									if match_and_succ "content-type:" i then (
-										i := skip_spaces source !i;
+										i := skip_spaces s !i;
 										let ct_first = !i in
 										while not (newline i) do
 											incr i
 										done;
 										let ct_last = remove_last_crlf !i in
-										let content_type = String.sub source ct_first (ct_last - ct_first) in
+										let content_type = String.sub s ct_first (ct_last - ct_first) in
 										let (_: bool) = newline i in
-										result := StringMap.add name (String.sub source !i (last - !i)) !result;
+										result := StringMap.add name (String.sub s !i (last - !i)) !result;
 										result := StringMap.add (name ^ ":filename") filename !result;
 										result := StringMap.add (name ^ ":content-type") content_type !result;
 									)
