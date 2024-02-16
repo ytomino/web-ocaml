@@ -76,6 +76,7 @@ assert (
 	Web.decode_content_type "multipart/form-data; boundary=BOUNDARY"
 	= `multipart_form_data
 );;
+assert (Web.decode_content_type "multipart/form-dataa" = `unknown);;
 
 (* multipart/form-data *)
 
