@@ -94,4 +94,17 @@ in
 assert (Web.StringMap.find "name" m = "Yamada");
 assert (Web.StringMap.find "namae" m = "山田");;
 
+let m =
+	Web.decode_multipart_form_data "\
+		---boundary\n\
+		Content-Disposition: form-data; name=\"name\"; filename=\"in.txt\"\n\
+		Content-Type: text/plain\n\
+		\n\
+		value\n\
+		---boundary--\n"
+in
+assert (Web.StringMap.find "name" m = "value");
+assert (Web.StringMap.find "name:filename" m = "in.txt");
+assert (Web.StringMap.find "name:content-type" m = Web.text_plain);;
+
 prerr_endline "ok";;

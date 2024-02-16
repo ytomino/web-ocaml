@@ -32,4 +32,15 @@ assert (Web.CGI.request_path () = "/path");;
 let m = Web.CGI.query () in
 assert (Web.StringMap.find "NAME" m = "VALUE");;
 
+(* CONTENT_TYPE *)
+
+let env_content_type = "CONTENT_TYPE";;
+
+Unix.putenv env_content_type "";;
+assert (Web.CGI.post_encoded () = `unknown);;
+Unix.putenv env_content_type "application/x-www-form-urlencoded";;
+assert (Web.CGI.post_encoded () = `urlencoded);;
+Unix.putenv env_content_type "multipart/form-data";;
+assert (Web.CGI.post_encoded () = `multipart_form_data);;
+
 prerr_endline "ok";;
