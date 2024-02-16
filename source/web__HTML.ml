@@ -18,12 +18,19 @@ let make_print_string (print_substring: string -> int -> int -> unit)
 	print_substring s 0 (String.length s)
 );;
 
+let nbsp (version: version) = (
+	match version with
+	| `html4 | `html5 -> "&nbsp;"
+	| `xhtml1 | `xhtml5 | `xml -> "&#160;"
+);;
+
 module Text = struct
 	type text_context = {
 		version: version;
+		space: [`nbsp | `nbsp_boundary] option;
 		newline: [`br] option;
 		print_substring: string -> int -> int -> unit;
-		mutable cr: bool
+		mutable state: [`initial | `non_blank | `blank | `nbsp | `cr];
 	};;
 end;;
 
@@ -46,26 +53,51 @@ let print_newline (context: text_context) = (
 	)
 );;
 
-let open_text (version: version) ?(newline: [`br] option)
-	(print_substring: string -> int -> int -> unit) =
+let open_text (version: version) ?(space: [`nbsp | `nbsp_boundary] option)
+	?(newline: [`br] option) (print_substring: string -> int -> int -> unit) =
 (
-	{Text.version; newline; print_substring; cr = false}
+	{Text.version; space; newline; print_substring; state = `initial}
 );;
 
 let close_text (context: text_context) = (
-	let {Text.cr; _} = context in
-	if cr then (
+	let {Text.version; print_substring; state; _} = context in
+	let print_string = make_print_string print_substring in
+	match state with
+	| `initial ->
+		()
+	| `non_blank | `nbsp ->
+		context.Text.state <- `initial
+	| `blank ->
+		assert (context.Text.space = Some `nbsp_boundary);
+		print_string (nbsp version);
+		context.Text.state <- `initial
+	| `cr ->
 		print_newline context;
-		context.Text.cr <- false
-	)
+		context.Text.state <- `initial
 );;
 
 let unsafe_text_output_substring: text_context -> string -> int -> int ->
 	unit =
+	let to_non_blank context = (
+		let {Text.print_substring; state; _} = context in
+		let print_string = make_print_string print_substring in
+		match state with
+		| `initial | `nbsp ->
+			context.Text.state <- `non_blank
+		| `non_blank ->
+			()
+		| `blank ->
+			print_string " ";
+			context.Text.state <- `non_blank
+		| `cr ->
+			print_newline context;
+			context.Text.state <- `non_blank
+	) in
 	let rec loop context s start i end_pos = (
-		let {Text.print_substring; cr; _} = context in
-		assert (start = i || not cr);
+		let {Text.version; space; print_substring; state; _} = context in
+		assert (start = i || state = `non_blank);
 		let print_range = make_print_range print_substring in
+		let print_string = make_print_string print_substring in
 		if i >= end_pos then print_range s start i else
 		match s.[i] with
 		| '&' ->
@@ -75,32 +107,78 @@ let unsafe_text_output_substring: text_context -> string -> int -> int ->
 		| '>' ->
 			substitute context s start i end_pos "&gt;"
 		| ' ' ->
-			substitute context s start i end_pos "&#32;"
+			begin match space with
+			| None ->
+				others context s start i end_pos
+			| Some `nbsp ->
+				substitute context s start i end_pos (nbsp version)
+			| Some `nbsp_boundary ->
+				begin match state with
+				| `initial ->
+					print_string (nbsp version);
+					context.Text.state <- `nbsp;
+				| `non_blank ->
+					print_range s start i;
+					context.Text.state <- `blank;
+				| `blank ->
+					let nbsp = nbsp version in
+					print_string nbsp;
+					print_string nbsp;
+					context.Text.state <- `nbsp
+				| `nbsp ->
+					print_string (nbsp version)
+				| `cr ->
+					print_newline context;
+					print_string (nbsp version);
+					context.Text.state <- `nbsp;
+				end;
+				let next = i + 1 in
+				loop context s next next end_pos
+			end
 		| '\n' ->
-			context.Text.cr <- false;
-			print_range s start i;
+			begin match state with
+			| `initial ->
+				()
+			| `non_blank ->
+				print_range s start i
+			| `blank ->
+				print_string (nbsp version);
+				context.Text.state <- `initial;
+			| `nbsp | `cr ->
+				context.Text.state <- `initial;
+			end;
 			print_newline context;
 			let next = i + 1 in
 			loop context s next next end_pos
 		| '\r' ->
-			if not cr then (
+			begin match state with
+			| `initial | `nbsp ->
+				context.Text.state <- `cr
+			| `non_blank ->
 				print_range s start i;
-				context.Text.cr <- true
-			) else print_newline context;
+				context.Text.state <- `cr
+			| `blank ->
+				print_string (nbsp version);
+				context.Text.state <- `cr
+			| `cr ->
+				print_newline context
+			end;
 			let next = i + 1 in
 			loop context s next next end_pos
 		| _ ->
-			close_text context;
-			loop context s start (i + 1) end_pos
+			others context s start i end_pos
 	) and substitute context s start i end_pos cer = (
 		let {Text.print_substring; _} = context in
 		let print_range = make_print_range print_substring in
 		let print_string = make_print_string print_substring in
 		if start < i then print_range s start i
-		else close_text context;
+		else to_non_blank context;
 		print_string cer;
 		let next = i + 1 in
 		loop context s next next end_pos
+	) and others context s start i end_pos = (
+		to_non_blank context;
+		loop context s start (i + 1) end_pos
 	) in
 	fun context s pos len -> loop context s pos pos (pos + len);;
 
