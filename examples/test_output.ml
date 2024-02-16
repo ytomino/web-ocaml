@@ -40,6 +40,35 @@ assert (Buffer.contents b = "<br><br />");;
 
 Buffer.clear b;;
 
+let out space s = (
+	let tc = Web.HTML.open_text `html4 ?space (Buffer.add_substring b) in
+	Web.HTML.text_output_string tc s;
+	Web.HTML.close_text tc
+) in
+out None "A B  C <  > \n  \n";
+out (Some `nbsp) "A B  C <  > \n  \n";
+out (Some `nbsp_boundary) "A B  C <  > \n  \n";
+out (Some `nbsp_boundary) " A ";
+out (Some `nbsp_boundary) "  A  ";
+out (Some `nbsp_boundary) " & ";
+out (Some `nbsp_boundary) "  &  ";
+out (Some `nbsp_boundary) " \n ";
+out (Some `nbsp_boundary) "  \n  ";
+assert (
+	Buffer.contents b = "\
+		A B  C &lt;  &gt; \n  \n\
+		A&nbsp;B&nbsp;&nbsp;C&nbsp;&lt;&nbsp;&nbsp;&gt;&nbsp;\n&nbsp;&nbsp;\n\
+		A B&nbsp;&nbsp;C &lt;&nbsp;&nbsp;&gt;&nbsp;\n&nbsp;&nbsp;\n\
+		&nbsp;A&nbsp;\
+		&nbsp;&nbsp;A&nbsp;&nbsp;\
+		&nbsp;&amp;&nbsp;\
+		&nbsp;&nbsp;&amp;&nbsp;&nbsp;\
+		&nbsp;\n&nbsp;\
+		&nbsp;&nbsp;\n&nbsp;&nbsp;"
+);;
+
+Buffer.clear b;;
+
 let out newline = (
 	let tc = Web.HTML.open_text `html4 ?newline (Buffer.add_substring b) in
 	Web.HTML.text_output_string tc "\rA\r\nB\r\rC\r";
