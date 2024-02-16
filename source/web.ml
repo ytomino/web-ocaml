@@ -250,23 +250,28 @@ let decode_cookie: string -> string StringMap.t =
 
 type post_encoded = [`unknown | `urlencoded | `multipart_form_data];;
 
-let prefixed sub s = (
+let insensitive_starts_with_from (sub: string) (s: string) (pos: int) = (
+	assert (pos >= 0);
 	let sub_length = String.length sub in
+	assert (sub_length > 0);
 	let s_length = String.length s in
-	if sub_length > s_length then (
+	if pos + sub_length > s_length || Char.lowercase_ascii s.[pos] <> sub.[0]
+	then (
 		false
-	) else if sub_length < s_length then (
-		sub = String.sub s 0 sub_length
+	) else if pos > 0 || sub_length < s_length then (
+		String.lowercase_ascii (String.sub s pos sub_length) = sub
 	) else (
-		sub = s
+		String.lowercase_ascii s = sub
 	)
 );;
 
 let decode_content_type (s: string) = (
-	let content_type_value = String.lowercase_ascii s in
-	if prefixed application_x_www_form_urlencoded content_type_value then (
+	let prefixed sub s = (
+		insensitive_starts_with_from sub s 0
+	) in
+	if prefixed application_x_www_form_urlencoded s then (
 		`urlencoded
-	) else if prefixed multipart_form_data content_type_value then (
+	) else if prefixed multipart_form_data s then (
 		`multipart_form_data
 	) else (
 		`unknown
@@ -286,104 +291,171 @@ let string_index_from_opt s i sub = (
 	loop s i sub
 );;
 
-let decode_multipart_form_data (s: string) = (
-	let s_length = String.length s in
-	let newline (i: int ref) = (
-		if s.[!i] = '\r' then (
-			incr i;
-			if !i < s_length && s.[!i] = '\n' then incr i;
-			true
-		) else if s.[!i] = '\n' then (
-			incr i;
-			true
-		) else (
-			false
-		)
+let decode_multipart_form_data: string -> string StringMap.t =
+	let newline s i = (
+		let s_length = String.length s in
+		if i >= s_length then None else
+		match s.[i] with
+		| '\n' ->
+			Some (i + 1)
+		| '\r' ->
+			Some (
+				let next = i + 1 in
+				if next < s_length && s.[next] = '\n' then next + 1
+				else next
+			)
+		| _ ->
+			None
 	) in
-	let get_string (i: int ref) = (
-		if s.[!i] = '\"' then (
-			incr i;
-			let first = !i in
-			while !i < s_length && s.[!i] <> '\"' do
-				incr i
-			done;
-			let last = !i in
-			incr i;
-			String.sub s first (last - first)
-		) else (
-			""
-		)
+	let get_string s i = (
+		if s.[i] = '"' then (
+			let value_pos = i + 1 in
+			let value_end, quot_end =
+				match String.index_from_opt s value_pos '\"' with
+				| None ->
+					let s_length = String.length s in
+					s_length, s_length
+				| Some quot_pos ->
+					quot_pos, quot_pos + 1
+			in
+			let value = String.sub s value_pos (value_end - value_pos) in
+			quot_end, value
+		) else i, ""
 	) in
-	let match_and_succ (sub: string) (i: int ref) = (
-		let sub_length = String.length sub in
-		if !i + sub_length <= s_length
-			&& String.lowercase_ascii (String.sub s !i sub_length) = sub
-		then (
-			i := !i + sub_length;
-			true
-		) else (
-			false
-		)
+	let match_and_succ sub s i = (
+		if insensitive_starts_with_from sub s i then Some (i + String.length sub)
+		else None
 	) in
-	let remove_last_crlf (i: int) = (
+	let remove_last_crlf s i = (
 		let i = if s.[i - 1] = '\n' then pred i else i in
 		let i = if s.[i - 1] = '\r' then pred i else i in
 		i
 	) in
-	let result = ref StringMap.empty in
-	if s.[0] = '-' then (
-		let i = ref 0 in
-		while !i < s_length && not (newline i) do
-			incr i;
-		done;
-		let boundary = String.sub s 0 (remove_last_crlf !i) in
-		while !i < s_length do
-			let (_: bool) = newline i in
-			let next =
-				match string_index_from_opt s !i boundary with
-				| None -> s_length
+	let rec on_boundary_newline s i boundary result = (
+		let i =
+			match newline s i with
+			| None -> i
+			| Some next -> next
+		in
+		on_header s i boundary result
+	) and skip s i boundary result = (
+		let s_length = String.length s in
+		assert (i >= 0 && i <= s_length);
+		if i >= s_length then result else
+		let boundary_end =
+			match string_index_from_opt s i boundary with
+			| None ->
+				s_length
+			| Some boundary_pos ->
+				boundary_pos + String.length boundary
+		in
+		on_boundary_newline s boundary_end boundary result
+	) and on_text s i boundary result name = (
+		assert (i >= 0 && i <= String.length s);
+		let value_pos =
+			match newline s i with
+			| None -> i
+			| Some next -> next
+		in
+		let boundary_pos, boundary_end =
+			match string_index_from_opt s value_pos boundary with
+			| None ->
+				let s_length = String.length s in
+				s_length, s_length
+			| Some boundary_pos ->
+				boundary_pos, boundary_pos + String.length boundary
+		in
+		let value_end = remove_last_crlf s boundary_pos in
+		let value = String.sub s value_pos (value_end - value_pos) in
+		let result = StringMap.add name value result in
+		on_boundary_newline s boundary_end boundary result
+	) and on_file: string -> int -> string -> string StringMap.t -> string ->
+		string -> string StringMap.t =
+		let rec index_newline s i = (
+			if i >= String.length s then i, i else
+			match newline s i with
+			| None ->
+				index_newline s (i + 1)
+			| Some next ->
+				i, next
+		) in
+		fun s i boundary result name filename ->
+		match match_and_succ "content-type:" s i with
+		| None ->
+			skip s i boundary result
+		| Some i ->
+			let ct_pos = skip_spaces s i in
+			let ct_end, i = index_newline s ct_pos in
+			let value_pos =
+				match newline s i with
+				| None -> i
 				| Some next -> next
 			in
-			let last = remove_last_crlf next in
-			if match_and_succ "content-disposition:" i then (
-				i := skip_spaces s !i;
-				if match_and_succ "form-data;" i then (
-					i := skip_spaces s !i;
-					if match_and_succ "name=" i then (
-						let name = get_string i in
-						if newline i then (
-							let (_: bool) = newline i in
-							result := StringMap.add name (String.sub s !i (last - !i)) !result
-						) else if s.[!i] = ';' then (
-							incr i;
-							i := skip_spaces s !i;
-							if match_and_succ "filename=" i then (
-								let filename = get_string i in
-								if newline i then (
-									if match_and_succ "content-type:" i then (
-										i := skip_spaces s !i;
-										let ct_first = !i in
-										while not (newline i) do
-											incr i
-										done;
-										let ct_last = remove_last_crlf !i in
-										let content_type = String.sub s ct_first (ct_last - ct_first) in
-										let (_: bool) = newline i in
-										result := StringMap.add name (String.sub s !i (last - !i)) !result;
-										result := StringMap.add (name ^ ":filename") filename !result;
-										result := StringMap.add (name ^ ":content-type") content_type !result;
-									)
-								)
-							)
-						)
-					)
-				)
-			);
-			i := next + (String.length boundary)
-		done
-	);
-	!result
-);;
+			let boundary_pos, boundary_end =
+				match string_index_from_opt s value_pos boundary with
+				| None ->
+					let s_length = String.length s in
+					s_length, s_length
+				| Some boundary_pos ->
+					boundary_pos, boundary_pos + String.length boundary
+			in
+			let value_end = remove_last_crlf s boundary_pos in
+			let value = String.sub s value_pos (value_end - value_pos) in
+			let content_type = String.sub s ct_pos (ct_end - ct_pos) in
+			let result = StringMap.add name value result in
+			let result = StringMap.add (name ^ ":filename") filename result in
+			let result = StringMap.add (name ^ ":content-type") content_type result in
+			on_boundary_newline s boundary_end boundary result
+	and on_header s i boundary result = (
+		assert (i >= 0 && i <= String.length s);
+		match match_and_succ "content-disposition:" s i with
+		| None ->
+			skip s i boundary result
+		| Some i ->
+			let i = skip_spaces s i in
+			begin match match_and_succ "form-data;" s i with
+			| None ->
+				skip s i boundary result
+			| Some i ->
+				let i = skip_spaces s i in
+				begin match match_and_succ "name=" s i with
+				| None ->
+					skip s i boundary result
+				| Some i ->
+					let i, name = get_string s i in
+					begin match newline s i with
+					| None ->
+						if s.[i] = ';' then (
+							let i = skip_spaces s (i + 1) in
+							match match_and_succ "filename=" s i with
+							| None ->
+								skip s i boundary result
+							| Some i ->
+								let i, filename = get_string s i in
+								begin match newline s i with
+								| None ->
+									skip s i boundary result
+								| Some next ->
+									on_file s next boundary result name filename
+								end
+						) else skip s i boundary result
+					| Some next ->
+						on_text s next boundary result name
+					end
+				end
+			end
+	) and on_first_boundary s i = (
+		assert (i >= 0 && i <= String.length s);
+		if i >= String.length s then StringMap.empty else
+		match newline s i with
+		| None ->
+			on_first_boundary s (i + 1)
+		| Some next ->
+			on_boundary_newline s next (String.sub s 0 i) StringMap.empty
+	) in
+	fun s ->
+	if s.[0] = '-' then on_first_boundary s 1
+	else StringMap.empty;;
 
 let make_print_string (print_substring: string -> int -> int -> unit)
 	(s: string) =
