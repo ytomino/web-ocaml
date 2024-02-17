@@ -282,20 +282,27 @@ let decode_content_type (s: string) = (
 	)
 );;
 
-let string_index_from_opt s i sub = (
-	let rec loop s i sub = (
-		match String.index_from_opt s i sub.[0] with
-		| None -> None
-		| Some p as result ->
-			let sub_length = String.length sub in
-			if p + sub_length > String.length s then None else
-			if String.sub s p sub_length = sub then result
-			else loop s (p + 1) sub
-	) in
-	loop s i sub
-);;
-
 let decode_multipart_form_data: string -> string StringMap.t =
+	let rec index_boundary_from s i boundary = (
+		let submatch s i boundary boundary_pos = (
+			let boundary_length = String.length boundary in
+			if String.sub s boundary_pos boundary_length = boundary
+			then i, boundary_pos + boundary_length
+			else index_boundary_from s (i + 1) boundary
+		) in
+		let s_length = String.length s in
+		let boundary_length = String.length boundary in
+		if i + 1 + boundary_length > s_length then s_length, s_length else
+		match s.[i] with
+		| '\n' ->
+			submatch s i boundary (i + 1)
+		| '\r' ->
+			if i + 2 + boundary_length <= s_length && s.[i + 1] = '\n'
+			then submatch s i boundary (i + 2)
+			else submatch s i boundary (i + 1)
+		| _ ->
+			index_boundary_from s (i + 1) boundary
+	) in
 	let newline s i = (
 		let s_length = String.length s in
 		if i >= s_length then None else
@@ -330,49 +337,28 @@ let decode_multipart_form_data: string -> string StringMap.t =
 		if insensitive_starts_with_from sub s i then Some (i + String.length sub)
 		else None
 	) in
-	let remove_last_crlf s i = (
-		let i = if s.[i - 1] = '\n' then pred i else i in
-		let i = if s.[i - 1] = '\r' then pred i else i in
-		i
-	) in
 	let rec on_boundary_newline s i boundary result = (
-		let i =
-			match newline s i with
-			| None -> i
-			| Some next -> next
-		in
-		on_header s i boundary result
+		match newline s i with
+		| None ->
+			skip s i boundary result
+		| Some next ->
+			on_header s next boundary result
 	) and skip s i boundary result = (
 		let s_length = String.length s in
 		assert (i >= 0 && i <= s_length);
 		if i >= s_length then result else
-		let boundary_end =
-			match string_index_from_opt s i boundary with
-			| None ->
-				s_length
-			| Some boundary_pos ->
-				boundary_pos + String.length boundary
-		in
+		let _, boundary_end = index_boundary_from s i boundary in
 		on_boundary_newline s boundary_end boundary result
 	) and on_text s i boundary result name = (
 		assert (i >= 0 && i <= String.length s);
-		let value_pos =
-			match newline s i with
-			| None -> i
-			| Some next -> next
-		in
-		let boundary_pos, boundary_end =
-			match string_index_from_opt s value_pos boundary with
-			| None ->
-				let s_length = String.length s in
-				s_length, s_length
-			| Some boundary_pos ->
-				boundary_pos, boundary_pos + String.length boundary
-		in
-		let value_end = remove_last_crlf s boundary_pos in
-		let value = String.sub s value_pos (value_end - value_pos) in
-		let result = StringMap.add name value result in
-		on_boundary_newline s boundary_end boundary result
+		match newline s i with
+		| None ->
+			skip s i boundary result
+		| Some value_pos ->
+			let value_end, boundary_end = index_boundary_from s value_pos boundary in
+			let value = String.sub s value_pos (value_end - value_pos) in
+			let result = StringMap.add name value result in
+			on_boundary_newline s boundary_end boundary result
 	) and on_file: string -> int -> string -> string StringMap.t -> string ->
 		string -> string StringMap.t =
 		let rec index_newline s i = (
@@ -390,26 +376,18 @@ let decode_multipart_form_data: string -> string StringMap.t =
 		| Some i ->
 			let ct_pos = skip_spaces s i in
 			let ct_end, i = index_newline s ct_pos in
-			let value_pos =
-				match newline s i with
-				| None -> i
-				| Some next -> next
-			in
-			let boundary_pos, boundary_end =
-				match string_index_from_opt s value_pos boundary with
-				| None ->
-					let s_length = String.length s in
-					s_length, s_length
-				| Some boundary_pos ->
-					boundary_pos, boundary_pos + String.length boundary
-			in
-			let value_end = remove_last_crlf s boundary_pos in
-			let value = String.sub s value_pos (value_end - value_pos) in
-			let content_type = String.sub s ct_pos (ct_end - ct_pos) in
-			let result = StringMap.add name value result in
-			let result = StringMap.add (name ^ ":filename") filename result in
-			let result = StringMap.add (name ^ ":content-type") content_type result in
-			on_boundary_newline s boundary_end boundary result
+			begin match newline s i with
+			| None ->
+				skip s i boundary result
+			| Some value_pos ->
+				let value_end, boundary_end = index_boundary_from s value_pos boundary in
+				let value = String.sub s value_pos (value_end - value_pos) in
+				let content_type = String.sub s ct_pos (ct_end - ct_pos) in
+				let result = StringMap.add name value result in
+				let result = StringMap.add (name ^ ":filename") filename result in
+				let result = StringMap.add (name ^ ":content-type") content_type result in
+				on_boundary_newline s boundary_end boundary result
+			end
 	and on_header s i boundary result = (
 		assert (i >= 0 && i <= String.length s);
 		match match_and_succ "content-disposition:" s i with
@@ -455,7 +433,7 @@ let decode_multipart_form_data: string -> string StringMap.t =
 		| None ->
 			on_first_boundary s (i + 1)
 		| Some next ->
-			on_boundary_newline s next (String.sub s 0 i) StringMap.empty
+			on_header s next (String.sub s 0 i) StringMap.empty
 	) in
 	fun s ->
 	if s.[0] = '-' then on_first_boundary s 1
