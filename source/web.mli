@@ -12,6 +12,7 @@ val encode_uri_path: string -> string
 val decode_uri_path: string -> string
 val encode_uri_query: string -> string
 val decode_uri_query: string -> string
+val encode_query_string: string StringMap.t -> string
 val decode_query_string: string -> string StringMap.t
 val decode_cookie: string -> string StringMap.t
 

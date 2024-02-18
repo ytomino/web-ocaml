@@ -214,6 +214,38 @@ let decode_uri_query: string -> string =
 			s_pos + 1
 	);;
 
+let encode_query_string_like (separator: char) (m: string StringMap.t) = (
+	let max_length =
+		StringMap.fold (fun name value max_length ->
+			(if max_length = 0 then 0 else max_length + 1)
+			+ String.length name + 1 + String.length value * 3
+		) m 0
+	in
+	let result = Bytes.create max_length in
+	let length =
+		StringMap.fold (fun name value length ->
+			let next =
+				if length = 0 then 0
+				else (
+					Bytes.set result length separator;
+					length + 1
+				)
+			in
+			let name_length = String.length name in
+			String.blit name 0 result next name_length;
+			let next = next + name_length in
+			Bytes.set result next '=';
+			let next = next + 1 in
+			let encoded_value = encode_uri_query value in
+			let encoded_value_length = String.length encoded_value in
+			String.blit encoded_value 0 result next encoded_value_length;
+			next + encoded_value_length
+		) m 0
+	in
+	if length < max_length then Bytes.sub_string result 0 length
+	else Bytes.unsafe_to_string result
+);;
+
 let rec skip_spaces (s: string) (i: int) = (
 	if i >= String.length s || s.[i] <> ' ' then i
 	else skip_spaces s (i + 1)
@@ -241,6 +273,9 @@ let decode_query_string_or_cookie: char -> (string -> int -> int) -> string ->
 		loop (succ s next) (StringMap.add name value result) separator succ s
 	) in
 	loop 0 StringMap.empty;;
+
+let encode_query_string: string StringMap.t -> string =
+	encode_query_string_like '&';;
 
 let decode_query_string: string -> string StringMap.t =
 	decode_query_string_or_cookie '&' (fun _ i -> i + 1);;
