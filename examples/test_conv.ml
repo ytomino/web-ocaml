@@ -41,19 +41,49 @@ assert (
 
 (* Query *)
 
+let check_query encode_query decode_query decoded encoded = (
+	String.equal (encode_query decoded) encoded
+	&& Web.StringMap.equal String.equal (decode_query encoded) decoded
+);;
+
 let m = Web.decode_query_string "" in
 assert (Web.StringMap.is_empty m);;
 
+let m = Web.StringMap.empty in
+let s = "" in
+assert (check_query Web.encode_query_string Web.decode_query_string m s);;
+
 let m = Web.decode_query_string "namae=%E5%B1%B1%E7%94%B0" in
 assert (Web.StringMap.find "namae" m = "山田");;
+
+let m =
+	let open Web.StringMap in
+	add "namae" "山田" empty
+in
+let s = "namae=%e5%b1%b1%e7%94%b0" in
+assert (check_query Web.encode_query_string Web.decode_query_string m s);;
 
 let m = Web.decode_query_string "name=Yamada&namae=%E5%B1%B1%E7%94%B0" in
 assert (Web.StringMap.find "name" m = "Yamada");
 assert (Web.StringMap.find "namae" m = "山田");;
 
+let m =
+	let open Web.StringMap in
+	add "name" "Yamada" (add "namae" "山田" empty)
+in
+let s = "namae=%e5%b1%b1%e7%94%b0&name=Yamada" in
+assert (check_query Web.encode_query_string Web.decode_query_string m s);;
+
 let m = Web.decode_query_string "name=&namae=" in
 assert (Web.StringMap.find "name" m = "");
 assert (Web.StringMap.find "namae" m = "");;
+
+let m =
+	let open Web.StringMap in
+	add "name" "" (add "namae" "" empty)
+in
+let s = "namae=&name=" in
+assert (check_query Web.encode_query_string Web.decode_query_string m s);;
 
 let m = Web.decode_query_string "nameonly&namaeonly" in
 assert (Web.StringMap.find "nameonly" m = "");
