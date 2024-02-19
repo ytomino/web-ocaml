@@ -30,7 +30,8 @@ val header_break: (string -> int -> int -> unit) -> unit -> unit
 
 type query_string_context
 
-val open_query_string: (string -> int -> int -> unit) -> query_string_context
+val open_query_string: ?append:[`path | `query] ->
+	(string -> int -> int -> unit) -> query_string_context
 val close_query_string: query_string_context -> unit
 val query_string_output_map: query_string_context -> string StringMap.t -> unit
 
