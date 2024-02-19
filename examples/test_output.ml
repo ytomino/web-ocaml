@@ -8,6 +8,20 @@ assert (
 	Buffer.contents b = "set-cookie: K=V; expires=Thu, 01 Jan 1970 00:00:00 GMT;\n"
 );;
 
+(* Query *)
+
+Buffer.clear b;;
+
+let out m = (
+	let qc = Web.open_query_string (Buffer.add_substring b) in
+	Web.query_string_output_map qc m;
+	Web.close_query_string qc
+) in
+out Web.StringMap.empty;
+assert (Buffer.contents b = "");
+out (let open Web.StringMap in add "q" "?&=" (add "K" "V" empty));
+assert (Buffer.contents b = "K=V&q=%3f%26%3d");;
+
 (* HTML text *)
 
 Buffer.clear b;;
