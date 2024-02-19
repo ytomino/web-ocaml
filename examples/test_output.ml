@@ -12,15 +12,18 @@ assert (
 
 Buffer.clear b;;
 
-let out m = (
-	let qc = Web.open_query_string (Buffer.add_substring b) in
+let out append m = (
+	let qc = Web.open_query_string ?append (Buffer.add_substring b) in
 	Web.query_string_output_map qc m;
 	Web.close_query_string qc
 ) in
-out Web.StringMap.empty;
+out None Web.StringMap.empty;
+out (Some `path) Web.StringMap.empty;
+out (Some `query) Web.StringMap.empty;
 assert (Buffer.contents b = "");
-out (let open Web.StringMap in add "q" "?&=" (add "K" "V" empty));
-assert (Buffer.contents b = "K=V&q=%3f%26%3d");;
+out None (let open Web.StringMap in add "L" "M" (add "K" "V" empty));
+out (Some `query) (let open Web.StringMap in add "q" "?&=" empty);
+assert (Buffer.contents b = "K=V&L=M&q=%3f%26%3d");;
 
 (* HTML text *)
 
@@ -162,5 +165,20 @@ let out version name = (
 out `html4 "HTML4";
 out `html5 "HTML5";
 assert (Buffer.contents b = " HTML4=\"\n\" HTML5=\"&#13;&NewLine;\"");;
+
+(* Query into HTML attribute *)
+
+Buffer.clear b;;
+
+let ac = Web.HTML.open_attribute `html5 (Buffer.add_substring b) "href" in
+Web.HTML.attribute_output_string ac "http://example.net/";
+let qc =
+	Web.open_query_string ~append:`path (Web.HTML.attribute_output_substring ac)
+in
+Web.query_string_output_map qc (let open Web.StringMap in add "K" "V" empty);
+Web.query_string_output_map qc (let open Web.StringMap in add "L" "W" empty);
+Web.close_query_string qc;
+Web.HTML.close_attribute ac;
+assert (Buffer.contents b = " href=\"http://example.net/?K=V&amp;L=W\"");;
 
 prerr_endline "ok";;

@@ -543,6 +543,7 @@ let header_break (print_substring: string -> int -> int -> unit) () = (
 
 module Query_string = struct
 	type query_string_context = {
+		append: [`path | `query] option;
 		print_substring: string -> int -> int -> unit;
 		mutable first: bool
 	};;
@@ -550,8 +551,10 @@ end;;
 
 type query_string_context = Query_string.query_string_context;;
 
-let open_query_string (print_substring: string -> int -> int -> unit) = (
-	{Query_string.print_substring; first = true}
+let open_query_string ?(append: [`path | `query] option)
+	(print_substring: string -> int -> int -> unit) =
+(
+	{Query_string.append; print_substring; first = true}
 );;
 
 let close_query_string (_: query_string_context) = ();;
@@ -559,11 +562,16 @@ let close_query_string (_: query_string_context) = ();;
 let query_string_output_map (context: query_string_context)
 	(m: string StringMap.t) =
 (
-	let {Query_string.print_substring; first} = context in
+	let {Query_string.append; print_substring; first} = context in
 	let print_string = make_print_string print_substring in
 	context.Query_string.first <-
 		StringMap.fold (fun key value first ->
-			if not first then print_string "&";
+			if first then (
+				match append with
+				| None -> ()
+				| Some `path -> print_string "?"
+				| Some `query -> print_string "&"
+			) else print_string "&";
 			print_string key;
 			print_string "=";
 			print_string (encode_uri_query value);
