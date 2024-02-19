@@ -28,5 +28,11 @@ val header_cookie: (string -> int -> int -> unit) -> ?expires:float ->
 	string StringMap.t -> unit
 val header_break: (string -> int -> int -> unit) -> unit -> unit
 
+type query_string_context
+
+val open_query_string: (string -> int -> int -> unit) -> query_string_context
+val close_query_string: query_string_context -> unit
+val query_string_output_map: query_string_context -> string StringMap.t -> unit
+
 module CGI = Web__CGI
 module HTML = Web__HTML
