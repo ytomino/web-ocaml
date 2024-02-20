@@ -1,5 +1,6 @@
 open Web
 
+val request_scheme: unit -> string
 val host: unit -> string
 val request_uri: unit -> string
 val request_path: unit -> string
