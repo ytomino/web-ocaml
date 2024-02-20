@@ -1,6 +1,6 @@
 include Makefile.variables
 
-MLI=web.mli web__CGI.mli web__HTML.mli
+MLI=web.mli web__CGI.mli web__HTML.mli web__Locking.mli
 MLSRC=$(MLI:.mli=.ml)
 MLINIT=
 CSRC=
