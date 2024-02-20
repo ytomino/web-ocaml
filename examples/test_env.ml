@@ -1,3 +1,25 @@
+(* REQUEST_SCHEME and HTTPS *)
+
+let env_request_scheme = "REQUEST_SCHEME";;
+let env_https = "HTTPS";;
+
+(* none *)
+Unix.putenv env_request_scheme "";;
+Unix.putenv env_https "";;
+assert (Web.CGI.request_scheme () = "http");;
+(* by REQUEST_SCHEME *)
+Unix.putenv env_request_scheme "https";;
+Unix.putenv env_https "";;
+assert (Web.CGI.request_scheme () = "https");;
+(* by HTTPS *)
+Unix.putenv env_request_scheme "";;
+Unix.putenv env_https "on";;
+assert (Web.CGI.request_scheme () = "https");;
+Unix.putenv env_https "on=";;
+assert (Web.CGI.request_scheme () = "https");;
+Unix.putenv env_https "off";;
+assert (Web.CGI.request_scheme () = "http");;
+
 (* REQUEST_URI and QUERY_STRING *)
 
 let env_request_uri = "REQUEST_URI";;

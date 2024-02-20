@@ -4,6 +4,8 @@ let getenv name = (
 	try Sys.getenv name with Not_found -> ""
 );;
 
+let env_request_scheme = "REQUEST_SCHEME";;
+let env_https = "HTTPS";;
 let env_http_host = "HTTP_HOST";;
 let env_server_name = "SERVER_NAME";;
 let env_request_uri = "REQUEST_URI";;
@@ -15,6 +17,17 @@ let env_content_length = "CONTENT_LENGTH";;
 let env_remote_addr = "REMOTE_ADDR";;
 let env_remote_host = "REMOTE_HOST";;
 let env_user_agent = "HTTP_USER_AGENT";;
+
+let request_scheme () = (
+	let request_scheme = getenv env_request_scheme in
+	if String.length request_scheme <> 0 then request_scheme else
+	let https = getenv env_https in
+	if String.length https >= 2
+		&& Char.lowercase_ascii https.[0] = 'o'
+		&& Char.lowercase_ascii https.[1] = 'n'
+	then "https"
+	else "http"
+);;
 
 let host () = (
 	let http_host = getenv env_http_host in
