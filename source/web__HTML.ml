@@ -326,3 +326,5 @@ let attribute_output_substring (context: attribute_context) (s: string)
 let attribute_output_string (context: attribute_context) (s: string) = (
 	make_print_string (unsafe_attribute_output_substring context) s
 );;
+
+module Input = Web__HTML__Input;;

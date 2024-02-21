@@ -21,3 +21,5 @@ val close_attribute: attribute_context -> unit
 val attribute_output_substring: attribute_context -> string -> int -> int ->
 	unit
 val attribute_output_string: attribute_context -> string -> unit
+
+module Input = Web__HTML__Input
