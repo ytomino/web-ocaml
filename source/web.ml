@@ -1,6 +1,7 @@
 module StringMap = Map.Make(String);;
 
 let application_x_www_form_urlencoded = "application/x-www-form-urlencoded";;
+let application_xhtml_xml = "application/xhtml+xml";;
 let multipart_form_data = "multipart/form-data";;
 let text_html = "text/html";;
 let text_plain = "text/plain";;

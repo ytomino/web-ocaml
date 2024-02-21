@@ -1,6 +1,7 @@
 module StringMap: Map.S with type key = string
 
 val application_x_www_form_urlencoded: string
+val application_xhtml_xml: string
 val multipart_form_data: string
 val text_html: string
 val text_plain: string
