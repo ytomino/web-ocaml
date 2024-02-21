@@ -194,6 +194,17 @@ let text_output_string (context: text_context) (s: string) = (
 	make_print_string (unsafe_text_output_substring context) s
 );;
 
+let output_closing_empty_element (version: version)
+	(print_substring: string -> int -> int -> unit) () =
+(
+	let pos =
+		match version with
+		| `html4 | `html5 -> 2
+		| `xhtml1 | `xhtml5 | `xml -> 0
+	in
+	print_substring " />" pos (3 - pos)
+);;
+
 let newline (version: version) = (
 	match version with
 	| `html4 -> "\n" (* for very old browser *)
