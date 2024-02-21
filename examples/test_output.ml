@@ -181,4 +181,18 @@ Web.close_query_string qc;
 Web.HTML.close_attribute ac;
 assert (Buffer.contents b = " href=\"http://example.net/?K=V&amp;L=W\"");;
 
+(* HTML input *)
+
+Buffer.clear b;;
+
+Web.HTML.Input.output_map `html5 (Buffer.add_substring b) `hidden
+	(let open Web.StringMap in add "HTML5" "\n" empty);
+Web.HTML.Input.output_map `xhtml1 (Buffer.add_substring b) `hidden
+	(let open Web.StringMap in add "XHTML5" "\n" empty);
+assert (
+	Buffer.contents b = "\
+		<input type=\"hidden\" name=\"HTML5\" value=\"&NewLine;\">\
+		<input type=\"hidden\" name=\"XHTML5\" value=\"&#10;\" />"
+);;
+
 prerr_endline "ok";;
