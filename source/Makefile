@@ -1,6 +1,7 @@
 include Makefile.variables
 
-MLI=web.mli web__CGI.mli web__HTML.mli web__HTML__Input.mli web__Locking.mli
+MLI=web.mli web__CGI.mli web__HTML.mli web__HTML__Input.mli web__Locking.mli \
+    web__XML.mli
 MLSRC=$(MLI:.mli=.ml)
 MLINIT=
 CSRC=
@@ -30,3 +31,5 @@ $(BUILDDIR)/web__CGI.cmi: $(BUILDDIR)/web.cmi
 $(BUILDDIR)/web__CGI.cmx: $(BUILDDIR)/web.cmx
 $(BUILDDIR)/web__HTML__Input.cmi: $(BUILDDIR)/web.cmi $(BUILDDIR)/web__HTML.cmi
 $(BUILDDIR)/web__HTML__Input.cmx: $(BUILDDIR)/web.cmx $(BUILDDIR)/web__HTML.cmx
+$(BUILDDIR)/web__XML.cmo: $(BUILDDIR)/web__HTML.cmi
+$(BUILDDIR)/web__XML.cmx: $(BUILDDIR)/web__HTML.cmx

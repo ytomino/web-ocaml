@@ -195,4 +195,15 @@ assert (
 		<input type=\"hidden\" name=\"XHTML5\" value=\"&#10;\" />"
 );;
 
+(* XML *)
+
+Buffer.clear b;;
+
+Web.XML.xml_declaration (Buffer.add_substring b) ~endline:true ();
+Web.XML.xml_declaration (Buffer.add_substring b) ~encoding:"UTF-8" ();
+assert (
+	Buffer.contents b
+	= "<?xml version=\"1.0\"?>\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+);;
+
 prerr_endline "ok";;

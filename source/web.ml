@@ -583,3 +583,4 @@ let query_string_output_map (context: query_string_context)
 module CGI = Web__CGI
 module HTML = Web__HTML;;
 module Locking = Web__Locking;;
+module XML = Web__XML;;
