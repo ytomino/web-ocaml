@@ -32,3 +32,18 @@ let text_output_substring: text_context -> string -> int -> int -> unit =
 
 let text_output_string: text_context -> string -> unit =
 	Web__HTML.text_output_string;;
+
+type attribute_context = Web__HTML.attribute_context;;
+
+let open_attribute: (string -> int -> int -> unit) -> string ->
+	attribute_context =
+	Web__HTML.open_attribute `xml;;
+
+let close_attribute: attribute_context -> unit = Web__HTML.close_attribute;;
+
+let attribute_output_substring: attribute_context -> string -> int -> int ->
+	unit =
+	Web__HTML.attribute_output_substring;;
+
+let attribute_output_string: attribute_context -> string -> unit =
+	Web__HTML.attribute_output_string;;
