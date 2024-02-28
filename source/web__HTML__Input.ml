@@ -8,8 +8,8 @@ let make_print_string (print_substring: string -> int -> int -> unit)
 );;
 
 let output_map (version: version)
-	(print_substring: string -> int -> int -> unit) (_: [`hidden])
-	(m: string StringMap.t) =
+	(print_substring: string -> int -> int -> unit) ?(endline: bool option)
+	(_: [`hidden]) (m: string StringMap.t) =
 (
 	let print_string = make_print_string print_substring in
 	StringMap.iter (fun key value ->
@@ -20,6 +20,6 @@ let output_map (version: version)
 		let ac = open_attribute version print_substring "value" in
 		attribute_output_string ac value;
 		close_attribute ac;
-		output_closing_empty_element version print_substring ()
+		output_closing_empty_element version print_substring ?endline ()
 	) m
 );;

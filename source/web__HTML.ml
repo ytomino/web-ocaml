@@ -195,14 +195,15 @@ let text_output_string (context: text_context) (s: string) = (
 );;
 
 let output_closing_empty_element (version: version)
-	(print_substring: string -> int -> int -> unit) () =
+	(print_substring: string -> int -> int -> unit) ?(endline: bool = false) () =
 (
-	let pos =
+	let startpos =
 		match version with
 		| `html4 | `html5 -> 2
 		| `xhtml1 | `xhtml5 | `xml -> 0
 	in
-	print_substring " />" pos (3 - pos)
+	let endpos = if endline then 4 else 3 in
+	print_substring " />\n" startpos (endpos - startpos)
 );;
 
 let newline (version: version) = (

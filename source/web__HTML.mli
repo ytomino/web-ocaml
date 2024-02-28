@@ -11,7 +11,7 @@ val text_output_substring: text_context -> string -> int -> int -> unit
 val text_output_string: text_context -> string -> unit
 
 val output_closing_empty_element: version -> (string -> int -> int -> unit) ->
-	unit -> unit
+	?endline:bool -> unit -> unit
 
 type attribute_context
 
