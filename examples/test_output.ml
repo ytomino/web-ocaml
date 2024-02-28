@@ -185,13 +185,13 @@ assert (Buffer.contents b = " href=\"http://example.net/?K=V&amp;L=W\"");;
 
 Buffer.clear b;;
 
-Web.HTML.Input.output_map `html5 (Buffer.add_substring b) `hidden
+Web.HTML.Input.output_map `html5 (Buffer.add_substring b) ~endline:true `hidden
 	(let open Web.StringMap in add "HTML5" "\n" empty);
 Web.HTML.Input.output_map `xhtml1 (Buffer.add_substring b) `hidden
 	(let open Web.StringMap in add "XHTML5" "\n" empty);
 assert (
 	Buffer.contents b = "\
-		<input type=\"hidden\" name=\"HTML5\" value=\"&NewLine;\">\
+		<input type=\"hidden\" name=\"HTML5\" value=\"&NewLine;\">\n\
 		<input type=\"hidden\" name=\"XHTML5\" value=\"&#10;\" />"
 );;
 
