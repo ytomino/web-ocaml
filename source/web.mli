@@ -39,3 +39,4 @@ val query_string_output_map: query_string_context -> string StringMap.t -> unit
 module CGI = Web__CGI
 module HTML = Web__HTML
 module Locking = Web__Locking
+module XML = Web__XML
