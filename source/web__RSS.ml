@@ -74,6 +74,20 @@ struct
 		let _, text_context = context in
 		Web__XML.text_output_string text_context s
 	);;
+	
+	let output_substring (type a) (parent_context: a context) (s: string)
+		(pos: int) (len: int) =
+	(
+		let context = open_element_at parent_context in
+		element_output_substring context s pos len;
+		close_element context
+	);;
+	
+	let output_string (type a) (parent_context: a context) (s: string) = (
+		let context = open_element_at parent_context in
+		element_output_string context s;
+		close_element context
+	);;
 end;;
 
 module Description = struct

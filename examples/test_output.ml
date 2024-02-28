@@ -212,23 +212,11 @@ Buffer.clear b;;
 
 begin let rc = Web.RSS.open_element `rss2 (Buffer.add_substring b) in
 	begin let cc = Web.RSS.Channel.open_element_at rc in
-		begin let tc = Web.RSS.Title.open_element_at cc in
-			Web.RSS.Title.element_output_string tc "TITLE";
-			Web.RSS.Title.close_element tc;
-		end;
-		begin let lc = Web.RSS.Link.open_element_at cc in
-			Web.RSS.Link.element_output_string lc "http://example.net/";
-			Web.RSS.Link.close_element lc;
-		end;
-		begin let dc = Web.RSS.Description.open_element_at cc in
-			Web.RSS.Description.element_output_string dc "DESCRIPTION";
-			Web.RSS.Description.close_element dc;
-		end;
+		Web.RSS.Title.output_string cc "TITLE";
+		Web.RSS.Link.output_string cc "http://example.net/";
+		Web.RSS.Description.output_string cc "DESCRIPTION";
 		begin let ic = Web.RSS.Item.open_element_at cc in
-			begin let tc = Web.RSS.Title.open_element_at ic in
-				Web.RSS.Title.element_output_string tc "ITEMTITLE";
-				Web.RSS.Title.close_element tc;
-			end;
+			Web.RSS.Title.output_string cc "ITEMTITLE";
 			Web.RSS.Item.close_element ic;
 		end;
 		Web.RSS.Channel.close_element cc;

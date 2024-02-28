@@ -17,6 +17,9 @@ module Description: sig
 	include Text with type element_context := description_context
 	
 	val open_element_at: [< `channel | `item] context -> description_context
+	val output_substring: [< `channel | `item] context -> string -> int -> int ->
+		unit
+	val output_string: [< `channel | `item] context -> string -> unit
 end
 
 module Link: sig
@@ -25,6 +28,9 @@ module Link: sig
 	include Text with type element_context := link_context
 	
 	val open_element_at: [< `channel | `item] context -> link_context
+	val output_substring: [< `channel | `item] context -> string -> int -> int ->
+		unit
+	val output_string: [< `channel | `item] context -> string -> unit
 end
 
 module Title: sig
@@ -33,6 +39,9 @@ module Title: sig
 	include Text with type element_context := title_context
 	
 	val open_element_at: [< `channel | `item] context -> title_context
+	val output_substring: [< `channel | `item] context -> string -> int -> int ->
+		unit
+	val output_string: [< `channel | `item] context -> string -> unit
 end
 
 module Item: sig
