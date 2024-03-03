@@ -16,7 +16,6 @@ OCAMLCFLAGS=$(and $(filter-out 0,$(DEBUG)),-g) $(if $(ASSERT),,-noassert) -w +a
 OCAMLOPTFLAGS=$(OCAMLCFLAGS)
 CFLAGS=
 
-LDFLAGS=
 LDLIB=
 CCLIB=
 
