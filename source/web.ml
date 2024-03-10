@@ -583,4 +583,5 @@ module CGI = Web__CGI
 module HTML = Web__HTML;;
 module Locking = Web__Locking;;
 module RSS = Web__RSS;;
+module Template = Web__Template;;
 module XML = Web__XML;;
