@@ -15,6 +15,7 @@ OCAMLCFLAGS=$(and $(filter-out 0,$(DEBUG)),-g)
 OCAMLOPTFLAGS=$(OCAMLCFLAGS)
 OCAMLCFLAGS_EXE=$(and $(filter-out 0,$(DEBUG)),-g)
 OCAMLOPTFLAGS_EXE=$(OCAMLCFLAGS_EXE) $(addprefix -ccopt ,$(LDFLAGS))
+OCAML_INCLUDE_FLAGS=
 LDFLAGS?=
 
 BUILDSUFFIX=.noindex
@@ -35,16 +36,22 @@ all: \
 	$(BINLN)
 
 $(BUILDDIR)/%.byte.exe: %.ml $(BUILDDIR)/web.cma
-	$(OCAMLC) -c $(OCAMLCFLAGS) -o $(BUILDDIR)/$*.cmo -I $(BUILDDIR) $<
+	$(OCAMLC) $(strip \
+		-c $(OCAMLCFLAGS) \
+		-o $(BUILDDIR)/$*.cmo $(OCAML_INCLUDE_FLAGS) -I $(BUILDDIR) $<)
 	$(OCAMLC) $(strip \
 		$(OCAMLCFLAGS_EXE) \
-		-o $@ -I $(BUILDDIR) unix.cma web.cma $(BUILDDIR)/$*.cmo)
+		-o $@ $(OCAML_INCLUDE_FLAGS) unix.cma -I $(BUILDDIR) web.cma \
+		$(BUILDDIR)/$*.cmo)
 
 $(BUILDDIR)/%.opt.exe: %.ml $(BUILDDIR)/web.cmxa
-	$(OCAMLOPT) -c $(OCAMLOPTFLAGS) -o $(BUILDDIR)/$*.cmx -I $(BUILDDIR) $<
+	$(OCAMLOPT) $(strip \
+		-c $(OCAMLOPTFLAGS) \
+		-o $(BUILDDIR)/$*.cmx $(OCAML_INCLUDE_FLAGS) -I $(BUILDDIR) $<)
 	$(OCAMLOPT) $(strip \
 		$(OCAMLOPTFLAGS_EXE) \
-		-o $@ -I $(BUILDDIR) unix.cmxa web.cmxa $(BUILDDIR)/$*.cmx)
+		-o $@ $(OCAML_INCLUDE_FLAGS) unix.cmxa -I $(BUILDDIR) web.cmxa \
+		$(BUILDDIR)/$*.cmx)
 
 $(and $(OCAMLC),$(BUILDDIR)/web.cma) \
 $(and $(OCAMLOPT),$(BUILDDIR)/web.cmxa)&: \
@@ -67,7 +74,8 @@ $(TESTS): %: \
 	$(and $(OCAMLOPT),$(BUILDDIR)/$*.opt.exe)
 
 interactive: $(BUILDDIR)/web.cma
-	$(RLWRAP) ocaml $(OCAMLCFLAGS) -I $(BUILDDIR) unix.cma web.cma
+	$(RLWRAP) ocaml $(strip \
+		$(OCAMLCFLAGS) $(OCAML_INCLUDE_FLAGS) unix.cma -I $(BUILDDIR) web.cma)
 
 clean:
 	-$(and $(BINLN),[ -h "$(BINLN)" ] && rm "$(BINLN)")
