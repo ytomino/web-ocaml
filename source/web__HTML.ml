@@ -185,7 +185,7 @@ let unsafe_text_output_substring: text_context -> string -> int -> int ->
 let text_output_substring (context: text_context) (s: string) (pos: int)
 	(len: int) =
 (
-	if pos >= 0 && len >= 0 && pos + len <= String.length s
+	if pos >= 0 && len >= 0 && len <= String.length s - pos
 	then unsafe_text_output_substring context s pos len
 	else invalid_arg "Web.HTML.text_output_substring" (* __FUNCTION__ *)
 );;
@@ -319,7 +319,7 @@ let unsafe_attribute_output_substring: attribute_context -> string -> int ->
 let attribute_output_substring (context: attribute_context) (s: string)
 	(pos: int) (len: int) =
 (
-	if pos >= 0 && len >= 0 && pos + len <= String.length s
+	if pos >= 0 && len >= 0 && len <= String.length s - pos
 	then unsafe_attribute_output_substring context s pos len
 	else invalid_arg "Web.HTML.attribute_output_substring" (* __FUNCTION__ *)
 );;
