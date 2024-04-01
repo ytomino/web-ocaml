@@ -235,7 +235,7 @@ let unsafe_parse_substring: string -> int -> int -> template =
 	else raise (Parse_failure (endtag_pos, "extra </?"));;
 
 let parse_substring (s: string) (pos: int) (len: int) = (
-	if pos >= 0 && len >= 0 && pos + len <= String.length s
+	if pos >= 0 && len >= 0 && len <= String.length s - pos
 	then unsafe_parse_substring s pos len
 	else invalid_arg "Web.HTML.text_output_substring" (* __FUNCTION__ *)
 );;
