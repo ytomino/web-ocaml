@@ -292,13 +292,11 @@ let insensitive_starts_with_from (sub: string) (s: string) (pos: int) = (
 	let sub_length = String.length sub in
 	assert (sub_length > 0);
 	let s_length = String.length s in
-	if pos + sub_length > s_length || Char.lowercase_ascii s.[pos] <> sub.[0]
-	then (
-		false
-	) else if pos > 0 || sub_length < s_length then (
-		String.lowercase_ascii (String.sub s pos sub_length) = sub
-	) else (
-		String.lowercase_ascii s = sub
+	pos + sub_length <= s_length && Char.lowercase_ascii s.[pos] = sub.[0]
+	&& (
+		if pos > 0 || sub_length < s_length
+		then String.lowercase_ascii (String.sub s pos sub_length) = sub
+		else String.lowercase_ascii s = sub
 	)
 );;
 
