@@ -234,13 +234,13 @@ let encode_query_string_like (separator: char) (m: string StringMap.t) = (
 				)
 			in
 			let name_length = String.length name in
-			String.blit name 0 result next name_length;
+			Bytes.blit_string name 0 result next name_length;
 			let next = next + name_length in
 			Bytes.set result next '=';
 			let next = next + 1 in
 			let encoded_value = encode_uri_query value in
 			let encoded_value_length = String.length encoded_value in
-			String.blit encoded_value 0 result next encoded_value_length;
+			Bytes.blit_string encoded_value 0 result next encoded_value_length;
 			next + encoded_value_length
 		) m 0
 	in
@@ -517,8 +517,8 @@ let header_cookie (print_substring: string -> int -> int -> unit)
 				let date = encode_date time in
 				let date_length = String.length date in
 				let result = Bytes.create (9 + date_length + 1) in
-				String.blit " expires=" 0 result 0 9;
-				String.blit date 0 result 9 date_length;
+				Bytes.blit_string " expires=" 0 result 0 9;
+				Bytes.blit_string date 0 result 9 date_length;
 				Bytes.set result (9 + date_length) ';';
 				Bytes.unsafe_to_string result
 			| None -> ""

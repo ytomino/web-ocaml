@@ -43,9 +43,10 @@ let request_uri () = (
 		if query_string_length = 0 then request_uri else
 		let request_uri_length = String.length request_uri in
 		let result = Bytes.create (request_uri_length + 1 + query_string_length) in
-		String.blit request_uri 0 result 0 request_uri_length;
+		Bytes.blit_string request_uri 0 result 0 request_uri_length;
 		Bytes.set result request_uri_length '?';
-		String.blit query_string 0 result (request_uri_length + 1) query_string_length;
+		Bytes.blit_string query_string 0 result (request_uri_length + 1)
+			query_string_length;
 		Bytes.unsafe_to_string result
 	) else request_uri
 );;
