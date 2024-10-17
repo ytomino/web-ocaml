@@ -23,7 +23,7 @@ val parse_string: string -> template
 
 (** {1 Marshaling} *)
 
-val repair: (parsed_info * string) -> template
+val repair: parsed_info * string -> template
 (** A template can be marshaled separately as parsed_info and a source string.
     [repair (p, s)] checks [p] is a result parsed from [s] and coercions its
     type to restore the template. *)

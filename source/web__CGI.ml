@@ -96,11 +96,10 @@ let read_post () = (
 		let length = post_length () in
 		set_binary_mode_in stdin true;
 		let data = really_input_string stdin length in
-		begin match post_encoded () with
+		match post_encoded () with
 		| `urlencoded -> decode_query_string data
 		| `multipart_form_data -> decode_multipart_form_data data
 		| `unknown -> StringMap.empty
-		end
 	) else (
 		StringMap.empty
 	)

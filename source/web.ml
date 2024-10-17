@@ -120,19 +120,17 @@ let encode_uri: (bytes -> int -> char -> int) -> string -> string =
 	fun f s -> loop f s 0 (Bytes.create (String.length s * 3)) 0;;
 
 let is_hex c = (
-	begin match c with
+	match c with
 	| '0'..'9' | 'A'..'F' | 'a'..'f' -> true
 	| _ -> false
-	end
 );;
 
 let int_of_hex c loc = (
-	begin match c with
+	match c with
 	| '0'..'9' -> int_of_char c - int_of_char '0'
 	| 'A'..'F' -> int_of_char c - (int_of_char 'A' - 10)
 	| 'a'..'f' -> int_of_char c - (int_of_char 'a' - 10)
 	| _ -> invalid_arg loc
-	end
 );;
 
 let unescape_uri (d: bytes) (d_pos: int) (s: string) (s_pos: int) loc = (
@@ -512,7 +510,7 @@ let header_cookie (print_substring: string -> int -> int -> unit)
 	if not (StringMap.is_empty cookie) then (
 		let print_string = make_print_string print_substring in
 		let expires_image =
-			begin match expires with
+			match expires with
 			| Some time ->
 				let date = encode_date time in
 				let date_length = String.length date in
@@ -522,7 +520,6 @@ let header_cookie (print_substring: string -> int -> int -> unit)
 				Bytes.set result (9 + date_length) ';';
 				Bytes.unsafe_to_string result
 			| None -> ""
-			end
 		in
 		StringMap.iter (fun key value ->
 			print_string "set-cookie: ";
