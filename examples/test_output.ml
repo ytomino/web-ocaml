@@ -217,11 +217,11 @@ begin let rc = Web.RSS.open_element `rss2 (Buffer.add_substring b) in
 		Web.RSS.Description.output_string cc "DESCRIPTION";
 		begin let ic = Web.RSS.Item.open_element_at cc in
 			Web.RSS.Title.output_string cc "ITEMTITLE";
-			Web.RSS.Item.close_element ic;
+			Web.RSS.Item.close_element ic
 		end;
-		Web.RSS.Channel.close_element cc;
+		Web.RSS.Channel.close_element cc
 	end;
-	Web.RSS.close_element rc;
+	Web.RSS.close_element rc
 end;
 assert (
 	Buffer.contents b = "\

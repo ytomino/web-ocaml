@@ -30,7 +30,7 @@ module Text = struct
 		space: [`nbsp | `nbsp_boundary] option;
 		newline: [`br] option;
 		print_substring: string -> int -> int -> unit;
-		mutable state: [`initial | `non_blank | `blank | `nbsp | `cr];
+		mutable state: [`initial | `non_blank | `blank | `nbsp | `cr]
 	};;
 end;;
 
@@ -116,10 +116,10 @@ let unsafe_text_output_substring: text_context -> string -> int -> int ->
 				begin match state with
 				| `initial ->
 					print_string (nbsp version);
-					context.Text.state <- `nbsp;
+					context.Text.state <- `nbsp
 				| `non_blank ->
 					print_range s start i;
-					context.Text.state <- `blank;
+					context.Text.state <- `blank
 				| `blank ->
 					let nbsp = nbsp version in
 					print_string nbsp;
@@ -130,7 +130,7 @@ let unsafe_text_output_substring: text_context -> string -> int -> int ->
 				| `cr ->
 					print_newline context;
 					print_string (nbsp version);
-					context.Text.state <- `nbsp;
+					context.Text.state <- `nbsp
 				end;
 				let next = i + 1 in
 				loop context s next next end_pos
@@ -143,9 +143,9 @@ let unsafe_text_output_substring: text_context -> string -> int -> int ->
 				print_range s start i
 			| `blank ->
 				print_string (nbsp version);
-				context.Text.state <- `initial;
+				context.Text.state <- `initial
 			| `nbsp | `cr ->
-				context.Text.state <- `initial;
+				context.Text.state <- `initial
 			end;
 			print_newline context;
 			let next = i + 1 in
