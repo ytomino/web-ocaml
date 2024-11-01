@@ -14,7 +14,7 @@ let array_get (a: string array) (i: int) loc = (
 );;
 
 let array_find_index: string array -> string -> string -> int =
-	let rec loop i a s loc = (
+	let rec loop i (a: string array) (s: string) loc = (
 		if a.(i) = s then i else
 		if i < Array.length a then loop (i + 1) a s loc
 		else invalid_arg loc
