@@ -68,7 +68,11 @@ let close_text (context: text_context) = (
 	| `non_blank | `nbsp ->
 		context.Text.state <- `initial
 	| `blank ->
-		assert (context.Text.space = Some `nbsp_boundary);
+		assert (
+			match context.Text.space with
+			| Some `nbsp_boundary -> true
+			| _ -> false
+		);
 		print_string (nbsp version);
 		context.Text.state <- `initial
 	| `cr ->
