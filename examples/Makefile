@@ -34,7 +34,7 @@ BINLN=$(and $(filter $(BUILD),$(TARGET)), \
 EXAMPLES=$(basename $(wildcard *.ml))
 TESTS=$(filter test_%,$(EXAMPLES))
 
-.PHONY: all check interacitve clean $(TESTS)
+.PHONY: all check interactive clean $(TESTS)
 
 all: \
 	$(and $(OCAMLC),$(patsubst %,$(BUILDDIR)/%.byte.exe,$(EXAMPLES))) \
