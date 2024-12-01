@@ -36,10 +36,9 @@ TESTS=$(filter test_%,$(EXAMPLES))
 
 .PHONY: all check interactive clean $(TESTS)
 
-all: \
-	$(and $(OCAMLC),$(patsubst %,$(BUILDDIR)/%.byte.exe,$(EXAMPLES))) \
-	$(and $(OCAMLOPT),$(patsubst %,$(BUILDDIR)/%.opt.exe,$(EXAMPLES))) \
-	$(BINLN)
+all \
+: $(and $(OCAMLC),$(patsubst %,$(BUILDDIR)/%.byte.exe,$(EXAMPLES))) \
+  $(and $(OCAMLOPT),$(patsubst %,$(BUILDDIR)/%.opt.exe,$(EXAMPLES))) $(BINLN)
 
 $(BUILDDIR)/%.byte.exe: %.ml $(BUILDDIR)/web.cma
 	$(OCAMLC) $(strip \
@@ -59,9 +58,8 @@ $(BUILDDIR)/%.opt.exe: %.ml $(BUILDDIR)/web.cmxa
 		-o $@ $(OCAML_INCLUDE_FLAGS) unix.cmxa -I $(BUILDDIR) web.cmxa \
 		$(BUILDDIR)/$*.cmx)
 
-$(and $(OCAMLC),$(BUILDDIR)/web.cma) \
-$(and $(OCAMLOPT),$(BUILDDIR)/web.cmxa)&: \
-		../source/web*
+$(and $(OCAMLC),$(BUILDDIR)/web.cma) $(and $(OCAMLOPT),$(BUILDDIR)/web.cmxa) \
+&: ../source/web*
 	$(MAKE) $(strip \
 		-C ../source install \
 		BUILDDIR=$(abspath $(WEB_BUILDDIR)) \
@@ -73,9 +71,9 @@ $(BINLN):
 
 check: all $(TESTS)
 
-$(TESTS): %: \
-		$(and $(OCAMLC),$(BUILDDIR)/%.byte.exe) \
-		$(and $(OCAMLOPT),$(BUILDDIR)/%.opt.exe)
+$(TESTS): % \
+: $(and $(OCAMLC),$(BUILDDIR)/%.byte.exe) \
+  $(and $(OCAMLOPT),$(BUILDDIR)/%.opt.exe)
 	$(and $(OCAMLC),$<)
 	$(and $(OCAMLOPT),$(BUILDDIR)/$*.opt.exe)
 

@@ -29,8 +29,8 @@ include Makefile.rules
 PARENT_MODULES=web web__HTML
 
 $(foreach e,$(PARENT_MODULES), \
-  $(BUILDDIR)/$(e).cmi $(BUILDDIR)/$(e).cmo $(BUILDDIR)/$(e).cmx): \
-	private override OCAMLCFLAGS+=-no-alias-deps -w -49
+  $(BUILDDIR)/$(e).cmi $(BUILDDIR)/$(e).cmo $(BUILDDIR)/$(e).cmx) \
+: private override OCAMLCFLAGS+=-no-alias-deps -w -49
 
 $(BUILDDIR)/web__CGI.cmi: $(BUILDDIR)/web.cmi
 $(BUILDDIR)/web__CGI.cmx: $(BUILDDIR)/web.cmx
