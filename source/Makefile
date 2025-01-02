@@ -16,7 +16,9 @@ DEBUG=
 ASSERT=
 
 OCAMLCFLAGS=$(and $(filter-out 0,$(DEBUG)),-g) $(if $(ASSERT),,-noassert) -w +a
-OCAMLOPTFLAGS=$(OCAMLCFLAGS)
+OCAMLOPTFLAGS=$(OCAMLCFLAGS) \
+              $(and $(filter-out false,$(FUNCTION_SECTIONS)), \
+                -function-sections)
 OCAML_INCLUDE_FLAGS=$(and $(filter 5,$(OCAML_VERSION_MAJOR)),-I +unix)
 CFLAGS=
 C_INCLUDE_FLAGS=
