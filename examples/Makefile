@@ -27,6 +27,8 @@ LDFLAGS?=
 BUILDSUFFIX=.noindex
 BUILDDIR=$(TARGET)$(BUILDSUFFIX)
 WEB_BUILDDIR=$(BUILDDIR)/web$(BUILDSUFFIX)
+WEB_WORLD=$(and $(OCAMLC),$(BUILDDIR)/web.cma) \
+          $(and $(OCAMLOPT),$(BUILDDIR)/web.cmxa)
 
 BINLN=$(and $(filter $(BUILD),$(TARGET)), \
         $(if $(findstring mingw,$(BUILD))$(findstring msys,$(BUILD)),,bin))
@@ -34,7 +36,7 @@ BINLN=$(and $(filter $(BUILD),$(TARGET)), \
 EXAMPLES=$(basename $(wildcard *.ml))
 TESTS=$(filter test_%,$(EXAMPLES))
 
-.PHONY: all check interactive clean $(TESTS)
+.PHONY: all check world interactive clean $(TESTS)
 
 all \
 : $(and $(OCAMLC),$(patsubst %,$(BUILDDIR)/%.byte.exe,$(EXAMPLES))) \
@@ -58,12 +60,12 @@ $(BUILDDIR)/%.opt.exe: %.ml $(BUILDDIR)/web.cmxa
 		-o $@ $(OCAML_INCLUDE_FLAGS) unix.cmxa -I $(BUILDDIR) web.cmxa \
 		$(BUILDDIR)/$*.cmx)
 
-$(and $(OCAMLC),$(BUILDDIR)/web.cma) $(and $(OCAMLOPT),$(BUILDDIR)/web.cmxa) \
-&: ../source/web*
+$(WEB_WORLD): private INSTALLDIR=$(BUILDDIR)
+$(WEB_WORLD)&: ../source/web*
 	$(MAKE) $(strip \
 		-C ../source install \
 		BUILDDIR=$(abspath $(WEB_BUILDDIR)) \
-		INSTALLDIR=$(abspath $(BUILDDIR)) \
+		INSTALLDIR=$(abspath $(INSTALLDIR)) \
 		ASSERT=$(ASSERT))
 
 $(BINLN):
@@ -76,6 +78,8 @@ $(TESTS): % \
   $(and $(OCAMLOPT),$(BUILDDIR)/%.opt.exe)
 	$(and $(OCAMLC),$<)
 	$(and $(OCAMLOPT),$(BUILDDIR)/$*.opt.exe)
+
+world: $(WEB_WORLD)
 
 interactive: $(BUILDDIR)/web.cma
 	$(RLWRAP) ocaml $(strip \
