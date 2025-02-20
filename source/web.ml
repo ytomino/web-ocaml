@@ -54,14 +54,36 @@ let string_of_month = array_get month_data;;
 
 let month_of_string = array_find_index month_data;;
 
-let encode_date (time: float) = (
+let encode_date: float -> string =
+	let rec blit_int x dest pos length = (
+		let pred_length = length - 1 in
+		Bytes.set dest (pos + pred_length) (char_of_int (int_of_char '0' + x mod 10));
+		if pred_length <= 0 then ()
+		else blit_int (x / 10) dest pos pred_length
+	) in
+	fun time ->
 	let loc = "Web.encode_date" (* __FUNCTION__ *) in
 	let t = Unix.gmtime time in
-	Printf.sprintf "%s, %.2d %s %.4d %.2d:%.2d:%.2d GMT"
-		(string_of_weekday t.Unix.tm_wday loc) t.Unix.tm_mday
-		(string_of_month t.Unix.tm_mon loc) (t.Unix.tm_year + 1900) t.Unix.tm_hour
-		t.Unix.tm_min t.Unix.tm_sec
-);;
+	let result = Bytes.create 29 in
+	Bytes.blit_string (string_of_weekday t.Unix.tm_wday loc) 0 result 0 3;
+	Bytes.set result 3 ',';
+	Bytes.set result 4 ' ';
+	blit_int t.Unix.tm_mday result 5 2;
+	Bytes.set result 7 ' ';
+	Bytes.blit_string (string_of_month t.Unix.tm_mon loc) 0 result 8 3;
+	Bytes.set result 11 ' ';
+	blit_int (t.Unix.tm_year + 1900) result 12 4;
+	Bytes.set result 16 ' ';
+	blit_int t.Unix.tm_hour result 17 2;
+	Bytes.set result 19 ':';
+	blit_int t.Unix.tm_min result 20 2;
+	Bytes.set result 22 ':';
+	blit_int t.Unix.tm_sec result 23 2;
+	Bytes.set result 25 ' ';
+	Bytes.set result 26 'G';
+	Bytes.set result 27 'M';
+	Bytes.set result 28 'T';
+	Bytes.unsafe_to_string result;;
 
 let timegm (tm: Unix.tm) = (
 	let env_tz = "TZ" in
