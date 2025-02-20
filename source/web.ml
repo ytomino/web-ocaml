@@ -80,22 +80,42 @@ let timegm (tm: Unix.tm) = (
 
 let decode_date (s: string) = (
 	let loc = "Web.decode_date" (* __FUNCTION__ *) in
-	if String.length s = 29 && s.[3] = ',' && s.[4] = ' ' && s.[7] = ' '
-		&& s.[11] = ' ' && s.[16] = ' ' && s.[19] = ':' && s.[22] = ':' && s.[25] = ' '
-		&& s.[26] = 'G' && s.[27] = 'M' && s.[28] = 'T'
-	then
-		Scanf.sscanf s "%3s, %2d %3s %4d %2d:%2d:%2d GMT%!"
-			(fun tm_wday tm_mday mon year tm_hour tm_min tm_sec ->
-				let tm =
-					{Unix.tm_sec; tm_min; tm_hour; tm_mday; tm_mon = month_of_string mon loc;
-						tm_year = year - 1900; tm_wday = 0; tm_yday = 0; tm_isdst = false
-					}
-				in
-				let result, normalized_tm = timegm tm in
-				if normalized_tm.Unix.tm_wday = weekday_of_string tm_wday loc then result
-				else invalid_arg loc
-			)
-	else invalid_arg loc
+	let check_char s i value = (
+		if s.[i] = value then ()
+		else invalid_arg loc
+	) in
+	let get_int s pos len = (
+		try int_of_string (String.sub s pos len) with
+		| Failure _ -> invalid_arg loc
+	) in
+	if String.length s = 29 then (
+		let tm_wday = String.sub s 0 3 in
+		check_char s 3 ',';
+		check_char s 4 ' ';
+		let tm_mday = get_int s 5 2 in
+		check_char s 7 ' ';
+		let mon = String.sub s 8 3 in
+		check_char s 11 ' ';
+		let year = get_int s 12 4 in
+		check_char s 16 ' ';
+		let tm_hour = get_int s 17 2 in
+		check_char s 19 ':';
+		let tm_min = get_int s 20 2 in
+		check_char s 22 ':';
+		let tm_sec = get_int s 23 2 in
+		check_char s 25 ' ';
+		check_char s 26 'G';
+		check_char s 27 'M';
+		check_char s 28 'T';
+		let tm =
+			{Unix.tm_sec; tm_min; tm_hour; tm_mday; tm_mon = month_of_string mon loc;
+				tm_year = year - 1900; tm_wday = 0; tm_yday = 0; tm_isdst = false
+			}
+		in
+		let result, normalized_tm = timegm tm in
+		if normalized_tm.Unix.tm_wday = weekday_of_string tm_wday loc then result
+		else invalid_arg loc
+	) else invalid_arg loc
 );;
 
 let hex_of_int n = (
