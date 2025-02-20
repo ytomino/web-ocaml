@@ -82,8 +82,7 @@ $(TESTS): % \
 world: $(WEB_WORLD)
 
 interactive: $(BUILDDIR)/web.cma
-	$(RLWRAP) ocaml $(strip \
-		$(OCAMLCFLAGS) $(OCAML_INCLUDE_FLAGS) unix.cma -I $(BUILDDIR) web.cma)
+	$(RLWRAP) ocaml $(strip $(OCAML_INCLUDE_FLAGS) unix.cma -I $(BUILDDIR) web.cma)
 
 clean:
 	-$(and $(BINLN),[ -h "$(BINLN)" ] && rm "$(BINLN)")
